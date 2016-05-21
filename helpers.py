@@ -28,8 +28,8 @@ def initSysState():
   BUFFTIME = 0
   PLAYTIME = 0
   CANONICAL_TIME = 0
-  INIT_HB = 4000
-  MID_HB = 5000
+  INIT_HB = 200
+  MID_HB = 500
   BR = 0
   BW = 0
   AVG_SESSION_BITRATE = 0
