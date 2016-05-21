@@ -1,4 +1,5 @@
 # ABRSim
 ## Introduction
-The simulator outputs the avg. bitrate and rebuffering ratio of a video session given a throughput trace and the Adaptive Bitrate algorithm.
+This simulator performs a Discrete Event Simulation (DES) of a video player given a throughput trace and an Adaptive Bitrate (ABR) algorithm. 
+
 Will add usage instruction and notes later.
