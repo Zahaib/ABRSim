@@ -2,6 +2,12 @@
 import math
 from config import *
 from helpers import *
+# TODO:
+# 1. put the statistics logging inside a function
+# 2. figure out non-conditional and conditional events
+# 3. check whether a print at the end of the session is needed
+# 4. check the bootstrap code and remove the assumptions
+
 # def simulate(init, mid, singleSession): # input the pandas dataframe
 # for i in range(500,1000,500):
 hbconfig = [2000,5000,10000,15000,20000]
