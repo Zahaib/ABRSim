@@ -29,16 +29,16 @@ def initSysState():
   BUFFTIME = 0
   PLAYTIME = 0
   CANONICAL_TIME = 0
-  INIT_HB = 2000
-  MID_HB = 5000
+  INIT_HB = 500
+  MID_HB = 500
   BR = 0
   BW = 0
   AVG_SESSION_BITRATE = 0
   SWITCH_LOCK = 0
-  MAX_BUFFLEN = 120
-  LOCK = 15
+  
+  
 
-  return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK
+  return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK
 
 def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
   sanity = True
@@ -206,7 +206,7 @@ def parseSessionStateFromTrace(filename):
 	  ts.append(float(l.split(" ")[0]))
 	  bw.append(float(l.split(" ")[1]))
   
-  bitrates = [150, 250, 400] # candidate bitrates are in kbps, you can change these to suite your values
+  bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
   #ts = []
   #bw = []
 
@@ -274,7 +274,7 @@ def pickRandomFromUsedBW(usedBWArray):
 # utility function:
   # pick the highest bitrate that will not introduce buffering
 def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE):
-  BUFFER_SAFETY_MARGIN = 0.275
+  BUFFER_SAFETY_MARGIN = 1
   BUFFERING_WEIGHT = -1000
   BITRATE_WEIGHT = 1
   BANDWIDTH_SAFETY_MARGIN = 1 # 0.90

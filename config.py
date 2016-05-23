@@ -10,6 +10,8 @@ UTILITY_BITRATE_SELECTION = False
 BANDWIDTH_UTILITY = False
 BUFFERLEN_UTILITY = True
 DATABRICKS_MODE = False
+LOCK = 5
+MAX_BUFFLEN = 120
 conf = {'maxbuflen':120, 'r': 15, 'maxRPct':0.45}
 
  

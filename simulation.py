@@ -42,7 +42,7 @@ for gggg in range(0,1):
   sizeDict = dict()
   usedBWArray = []
   bitratesPlayed = dict()
-  BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK = initSysState()
+  BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK = initSysState()
   if DATABRICKS_MODE:
     group2 = group1.sort("timestampms")
     candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionState(group2)
