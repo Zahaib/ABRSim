@@ -71,6 +71,12 @@ def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
 
   return sanity      
 
+def generateStats(AVG_SESSION_BITRATE, BUFFTIME, PLAYTIME, bufftimems, playtimems):
+  AVG_SESSION_BITRATE = (AVG_SESSION_BITRATE/float(playtimems/float(1000))) # add float
+  REBUF_RATIO = round(BUFFTIME/float(BUFFTIME + PLAYTIME),3)
+  rebuf_groundtruth = round(bufftimems/float(bufftimems + playtimems),3)
+  
+  return AVG_SESSION_BITRATE, REBUF_RATIO, rebuf_groundtruth
 
 # inserts the jointime and bandwidth as an additional timestamp and bandwidth  
 def insertJoinTimeandInitBW(ts, bw, bwArray):
@@ -209,7 +215,7 @@ def parseSessionStateFromTrace(filename):
   chunkDuration = 1
   jointimems = 500
 
-  return bitrates, jointimems, totalTraceTime, totalTraceTime, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, 10 #10 , 75 # 
+  return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, 10 #10 , 75 # 
 
 
 # function returns interpolated bandwidth at the time of the heartbeat

@@ -38,7 +38,7 @@ for gggg in range(0,1):
   sizeDict = dict()
   usedBWArray = []
   bitratesPlayed = dict()
-  BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK = initSysState()
+  BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK = initSysState()
   # group2 = group1.sort("timestampms")
   candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace('filename')    
   
@@ -57,7 +57,7 @@ for gggg in range(0,1):
     bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
   BLEN += CHUNKSIZE
   CHUNKS_DOWNLOADED += 1
-  CANONICAL_TIME = jointime
+  CLOCK = jointime
   chunk_residue = 0 # partially downloded chunk
   AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
 
@@ -73,81 +73,81 @@ for gggg in range(0,1):
   buffering = False
   sessionFullyDownloaded = False
 
-#   BW = getInitBW(BR, CANONICAL_TIME, CHUNKSIZE) # if want to calculate using the jointimems
+#   BW = getInitBW(BR, CLOCK, CHUNKSIZE) # if want to calculate using the jointimems
 
 
-  while CANONICAL_TIME - BLEN * 1000 < sessiontimems: # todo: check the termination condition bwArray[len(bwArray) - 1][0]
-    # reset variables which are specific to a clock step
+  # run the clock till the sessiontime
+  while CLOCK - BLEN * 1000 < sessiontimems: 
+    # reset variables which are specific to an interval
     playStalled_thisInterval = 0
-    ch_d = 0
+    chd_thisInterval = 0
     blenAdded_thisInterval = 0
 
     if DEBUG:
-      printStats(CANONICAL_TIME, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
+      printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
       
     if CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 < 30000:
       interval = INIT_HB # 2 sec
     elif CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 >= 30000:
-      interval = MID_HB # 5 sec        
+      interval = MID_HB # 5 sec 
 
-    CANONICAL_TIME += interval # incrementing the canonical_time which is the same as sessiontime. Todo: change variable name to session time      
+    # incrementing the clock to jump to the next step
+    CLOCK += interval       
     if SWITCH_LOCK > 0:
-      SWITCH_LOCK -= interval/float(1000) # add float
-    
+      SWITCH_LOCK -= interval/float(1000) # add float 
+
     if BLEN > 0:
       buffering = False
 
+    # first take care of the non-conditional events ####################################################################################################
     if buffering and not sessionFullyDownloaded:
       playStalled_thisInterval = min(timeToDownloadSingleChunk(CHUNKSIZE, BR, BW, chunk_residue, CHUNKS_DOWNLOADED), interval/float(1000)) # add float
       if playStalled_thisInterval < interval/float(1000): # chunk download so resume
         buffering = False
 
     if not sessionFullyDownloaded:
-      # chunks downloaded during interval
-#         print chunk_residue
-      # print CANONICAL_TIME - interval, CANONICAL_TIME, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue
-      chunks, completionTimeStamps = chunksDownloaded(CANONICAL_TIME - interval, CANONICAL_TIME, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray)
-      ch_d = chunk_residue + chunks
-#         print ch_d, CHUNKSIZE
-  # calculate the size of the partially downloaded chunk
-      chunk_residue = ch_d - int(ch_d) 
-      if BLEN + ch_d * CHUNKSIZE >= MAX_BUFFLEN: # can't download more than the MAX_BUFFLEN
-        ch_d = int(MAX_BUFFLEN - BLEN)/CHUNKSIZE
+      numChunks, completionTimeStamps = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray)
+      chd_thisInterval = chunk_residue + numChunks
+
+      chunk_residue = chd_thisInterval - int(chd_thisInterval) 
+      if BLEN + chd_thisInterval * CHUNKSIZE >= MAX_BUFFLEN: # can't download more than the MAX_BUFFLEN
+        chd_thisInterval = int(MAX_BUFFLEN - BLEN)/CHUNKSIZE
         chunk_residue = 0
     
     # can't download more chunks than the total playtime of the session.
-    if CHUNKS_DOWNLOADED + int(ch_d) >=  math.ceil((playtimems)/float(CHUNKSIZE * 1000)):
-      ch_d = math.ceil((playtimems)/float(CHUNKSIZE * 1000)) - CHUNKS_DOWNLOADED
+    if CHUNKS_DOWNLOADED + int(chd_thisInterval) >=  math.ceil((playtimems)/float(CHUNKSIZE * 1000)):
+      chd_thisInterval = math.ceil((playtimems)/float(CHUNKSIZE * 1000)) - CHUNKS_DOWNLOADED
       
     # only append fully downloaded chunks                       
-    CHUNKS_DOWNLOADED += int(ch_d)
-    blenAdded_thisInterval =  int(ch_d) * CHUNKSIZE
+    CHUNKS_DOWNLOADED += int(chd_thisInterval)
+    blenAdded_thisInterval =  int(chd_thisInterval) * CHUNKSIZE
 
     # as long as the session has not finished downloading continue to update the average bitrate
     if CHUNKS_DOWNLOADED <= math.ceil((playtimems)/float(CHUNKSIZE * 1000)) and not sessionFullyDownloaded: # check the equal to sign in less than equal to
-      AVG_SESSION_BITRATE += int(ch_d) * BR * CHUNKSIZE
+      AVG_SESSION_BITRATE += int(chd_thisInterval) * BR * CHUNKSIZE
 
-    # if all the chunks in the sessions have been downloaded, mark the sessions complete
-    if CHUNKS_DOWNLOADED >= TOTAL_CHUNKS or CHUNKS_DOWNLOADED >= math.floor((playtimems)/float(CHUNKSIZE * 1000)): 
+    # if all the chunks in the sessions have been downloaded, mark the session complete
+    if CHUNKS_DOWNLOADED >= TOTAL_CHUNKS or CHUNKS_DOWNLOADED >= math.ceil((playtimems)/float(CHUNKSIZE * 1000)): 
       sessionFullyDownloaded = True
 
-    # this condition checks if we can run into buffering during this session
+    # this condition checks if we got in buffering during this interval
     if not buffering and BLEN >= 0 and BLEN + blenAdded_thisInterval < interval/float(1000) and not sessionFullyDownloaded: 
       playStalled_thisInterval += (interval/float(1000) - BLEN - blenAdded_thisInterval) # add float
       buffering = True
 
     # update the buffering time and playtime accumulated during this interval
-    # if not sessionFullyDownloaded:
     BUFFTIME += playStalled_thisInterval
     PLAYTIME += interval/float(1000) - playStalled_thisInterval # add float
 
-    # print BUFFTIME, sessionFullyDownloaded
     # update the bufferlen at the end of this interval
-#       BLEN = max(0, CHUNKS_DOWNLOADED * CHUNKSIZE - PLAYTIME) # this statement is same as above. Todo: check if this impacts correctness
     if buffering:
       BLEN = 0
     else:
       BLEN = max(0, CHUNKS_DOWNLOADED * CHUNKSIZE - PLAYTIME) # else update the bufferlen to take into account the current time step
+
+    ####################################################################################################################################################
+
+    # then take care of the conditional events #########################################################################################################
 
     # get the bitrate decision for the next interval
     oldBR = BR
@@ -171,19 +171,24 @@ for gggg in range(0,1):
       chunk_residue = 0         
       
     if PS_STYLE_BANDWIDTH:
-      BW = interpolateBWPrecisionServerStyle(CANONICAL_TIME, BLEN, usedBWArray)
+      BW = interpolateBWPrecisionServerStyle(CLOCK, BLEN, usedBWArray)
     else:
-      BW = max(interpolateBWInterval(CANONICAL_TIME, usedBWArray, bwArray),0.01) # interpolate bandwidth for the next heartbeat interval
+      BW = max(interpolateBWInterval(CLOCK, usedBWArray, bwArray),0.01) # interpolate bandwidth for the next heartbeat interval
     usedBWArray.append(BW) # save the bandwidth used in the session
+
+####################################################################################################################################################
+
+  # print status after finishing
+  if DEBUG:
+    printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
 
   # if sessions has bad bandwidth info, just omit it
   if 0.01 in usedBWArray:
     continue
 
+  # generate the statistics for the session ########################################################################################################
   NUM_SESSIONS += 1
-  AVG_SESSION_BITRATE = (AVG_SESSION_BITRATE/float(playtimems/float(1000))) # add float
-  REBUF_RATIO = round(BUFFTIME/float(BUFFTIME + PLAYTIME),3)
-  rebuf_groundtruth = round(bufftimems/float(bufftimems + playtimems),3)
+  AVG_SESSION_BITRATE, REBUF_RATIO, rebuf_groundtruth = generateStats(AVG_SESSION_BITRATE, BUFFTIME, PLAYTIME, bufftimems, playtimems)
 
   avgbw, stdbw = getBWStdDev(bwArray)
   avgbwSessions.append(avgbw)
