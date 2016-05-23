@@ -185,9 +185,9 @@ for gggg in range(0,1):
 
 ####################################################################################################################################################
 
-  # print status after finishing
-  if DEBUG:
-    printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
+  # # print status after finishing
+  # if DEBUG:
+  #   printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
 
   # if sessions has bad bandwidth info, just omit it
   if 0.01 in usedBWArray:

@@ -1,4 +1,5 @@
 # LIST OF HELPER FUNCTIONS
+import sys
 import numpy as np
 import random
 from config import *
@@ -221,7 +222,7 @@ def parseSessionStateFromTrace(filename):
   chunkDuration = 5
   jointimems = 500
 
-  return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, 10 #10 , 75 # 
+  return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, sys.maxint #10 , 75 # 
 
 
 # function returns interpolated bandwidth at the time of the heartbeat
