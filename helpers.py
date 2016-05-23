@@ -28,8 +28,8 @@ def initSysState():
   BUFFTIME = 0
   PLAYTIME = 0
   CANONICAL_TIME = 0
-  INIT_HB = 200
-  MID_HB = 500
+  INIT_HB = 2000
+  MID_HB = 5000
   BR = 0
   BW = 0
   AVG_SESSION_BITRATE = 0
@@ -199,9 +199,15 @@ def parseSessionState(group):
 
 # function intializes session state
 def parseSessionStateFromTrace(filename):
+  ts, bw = [], []
+  ls = open(filename).readlines()
+  for l in ls:
+	  ts.append(float(l.split(" ")[0]))
+	  bw.append(float(l.split(" ")[1]))
+  
   bitrates = [150, 250, 400] # candidate bitrates are in kbps, you can change these to suite your values
-  ts = []
-  bw = []
+  #ts = []
+  #bw = []
 
   # now write the code to read the trace file
 
@@ -209,10 +215,10 @@ def parseSessionStateFromTrace(filename):
   #   ts.append(group.irow(j)["timestampms"])
   #   bw.append(group.irow(j)["bandwidth"])
 
-  ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
-  bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
+  #ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
+  #bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
   totalTraceTime = ts[-1] # read this value as the last time stamp in the file
-  chunkDuration = 1
+  chunkDuration = 5
   jointimems = 500
 
   return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, 10 #10 , 75 # 

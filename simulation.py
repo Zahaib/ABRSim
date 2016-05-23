@@ -1,5 +1,5 @@
 # SIMULATION 1.0
-import math
+import math, sys
 from config import *
 from helpers import *
 # TODO:
@@ -7,6 +7,8 @@ from helpers import *
 # 2. figure out non-conditional and conditional events
 # 3. check whether a print at the end of the session is needed
 # 4. check the bootstrap code and remove the assumptions
+
+traceFile = sys.argv[1]
 
 # def simulate(init, mid, singleSession): # input the pandas dataframe
 # for i in range(500,1000,500):
@@ -45,7 +47,7 @@ for gggg in range(0,1):
     group2 = group1.sort("timestampms")
     candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionState(group2)
   else:
-    candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace('filename')    
+    candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace(traceFile)    
   
   if VALIDATION_MODE:
     bwArray = bwArray[0::2]
