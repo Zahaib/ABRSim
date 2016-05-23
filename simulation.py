@@ -16,8 +16,10 @@ hbconfig = [2000,5000,10000,15000,20000]
 debugcount = 0
 debugcountP = 0
 debugcountN = 0
-# singleSession[['timestampms', 'bandwidth']] = singleSession[['timestampms', 'bandwidth']].astype(int)
-# sessionwise = singleSession.groupby(['clientid','clientsessionid'])
+if DATABRICKS_MODE:
+  singleSession[['timestampms', 'bandwidth']] = singleSession[['timestampms', 'bandwidth']].astype(int)
+  sessionwise = singleSession.groupby(['clientid','clientsessionid'])
+
 NUM_SESSIONS = 0
 percentageErrorBitrate = []
 percentageErrorRebuf = []
@@ -34,13 +36,16 @@ for gggg in range(0,1):
   if DEBUG:
     printHeader()
 
-#     bwMap = dict()
+  bwMap = dict()
   sizeDict = dict()
   usedBWArray = []
   bitratesPlayed = dict()
   BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK = initSysState()
-  # group2 = group1.sort("timestampms")
-  candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace('filename')    
+  if DATABRICKS_MODE:
+    group2 = group1.sort("timestampms")
+    candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionState(group2)
+  else:
+    candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace('filename')    
   
   if VALIDATION_MODE:
     bwArray = bwArray[0::2]

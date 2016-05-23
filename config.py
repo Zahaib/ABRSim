@@ -9,6 +9,7 @@ TOTAL_CHUNKS  = 0
 UTILITY_BITRATE_SELECTION = False
 BANDWIDTH_UTILITY = False
 BUFFERLEN_UTILITY = True
+DATABRICKS_MODE = False
 conf = {'maxbuflen':120, 'r': 15, 'maxRPct':0.45}
 
  
