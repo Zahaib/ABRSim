@@ -264,37 +264,8 @@ def pickRandomFromUsedBW(usedBWArray):
   return usedBWArray[random.randint(len(usedBWArray)/2 ,len(usedBWArray) - 1)]
   
 
-# utility function:
-  # pick the highest bitrate that will not introduce buffering
-def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE):
-  BUFFER_SAFETY_MARGIN = 0.275
-  BUFFERING_WEIGHT = -1000
-  BITRATE_WEIGHT = 1
-  BANDWIDTH_SAFETY_MARGIN = 1 # 0.90
-  ret = -1;
-  candidateBitrates = sorted(candidateBitrates)
-  estBufferingTime = 0
-  utility = -1000000
-  actualbitrate = 0
-  bandwidth = bandwidth * BANDWIDTH_SAFETY_MARGIN
-  for br in candidateBitrates:
-#     if bandwidth < br * BANDWIDTH_SAFETY_MARGIN:
-#       continue
-    actualbitrate = br
-    if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
-    bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE      
-    estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
-    if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT:
-      ret = br
-      utility = estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT
-#     if max(actualbitrate * CHUNKSIZE/bandwidth - bufferlen * BUFFER_SAFETY_MARGIN, 0) == 0: ret = br
-  # extremely bad bandwidth case 
-  if ret == -1:
-    ret = candidateBitrates[0]
-  return ret
-
-# function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
-def getBitrateDecision(bufferlen, bitrates, bandwidth):
+# # function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
+def getUtilityBitrateDecision(bufferlen, bitrates, bandwidth, chunkid, CHUNKSIZE):
   WEIGHT = 0
   ret = -1;
   bitrates = sorted(bitrates)
