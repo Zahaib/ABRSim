@@ -1,6 +1,6 @@
 # LIST OF HELPER FUNCTIONS
 import numpy as np
-import random
+import random, sys
 from config import *
 # function return the initial bandwidth using the jointime of the session
 def printPercentile(target):
@@ -211,7 +211,8 @@ def parseSessionStateFromTrace(filename):
     ts.append(float(l.split(" ")[0]))
     bw.append(float(l.split(" ")[1]))
   
-  bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
+  # bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
+  bitrates  = range(150,2050,400)
   #ts = []
   #bw = []
 
@@ -275,9 +276,38 @@ def pickRandomFromUsedBW(usedBWArray):
 #     return -1
   return usedBWArray[random.randint(len(usedBWArray)/2 ,len(usedBWArray) - 1)]
   
+# utility function:
+  # pick the highest bitrate that will not introduce buffering
+def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE):
+  BUFFER_SAFETY_MARGIN = 0.275
+  BUFFERING_WEIGHT = -1000
+  BITRATE_WEIGHT = 1
+  BANDWIDTH_SAFETY_MARGIN = 1 # 0.90
+  ret = -1;
+  candidateBitrates = sorted(candidateBitrates)
+  estBufferingTime = 0
+  utility = -1000000
+  actualbitrate = 0
+  bandwidth = bandwidth * BANDWIDTH_SAFETY_MARGIN
+  for br in candidateBitrates:
+#     if bandwidth < br * BANDWIDTH_SAFETY_MARGIN:
+#       continue
+    actualbitrate = br
+    if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
+    bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE      
+    estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
+    if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT:
+      ret = br
+      utility = estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT
+#     if max(actualbitrate * CHUNKSIZE/bandwidth - bufferlen * BUFFER_SAFETY_MARGIN, 0) == 0: ret = br
+  # extremely bad bandwidth case 
+  if ret == -1:
+    ret = candidateBitrates[0]
+  return ret
+
 
 # function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
-def getUtilityBitrateDecision(bufferlen, bitrates, bandwidth, chunkid, CHUNKSIZE):
+def getUtilityBitrateDecisionBasic(bufferlen, bitrates, bandwidth, chunkid, CHUNKSIZE):
   WEIGHT = 0
   ret = -1;
   bitrates = sorted(bitrates)
@@ -416,123 +446,4 @@ def validationBWMap(bwArray):
   
 #   print zip(ts,bw)
   return zip(ts,bw)
-
-# def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZE, chunk_residue, remainingProcessing):
-#   debug=0
-#   chunkCount = 0.0
-#   processingStatus = False
-#   if remainingProcessing > 0:
-#     processingStatus = True
-  
-#   bitrateAtIntervalStart = bitrate
-#   if CHUNK_AWARE_MODE:
-#     bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)
-    
-#   if processingStatus==True:
-#     time2FinishResidueChunk = remainingProcessing
-#   else:
-#     time2FinishResidueChunk = (((1 - chunk_residue) * bitrate * CHUNKSIZE)/float(bandwidth)) * 1000
-    
-#   time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
-#   if debug: print "chunkDownload Start"
-#   if debug: print processingStatus, bitrateAtIntervalStart, time2FinishResidueChunk, time2DownloadFullChunk, chunk_residue
-#   # if there is a residue chunk from the last interval, then handle it first
-#   if (chunk_residue > 0 and time_prev + time2FinishResidueChunk < time_curr) or processingStatus==True:
-#     if processingStatus==True:
-#       time_prev += time2FinishResidueChunk
-#       if time_prev < time_curr:
-#         processingStatus=False
-#         chunkCount+=1
-#         if CHUNK_AWARE_MODE:
-#           chunkid += 1
-#           bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)
-#           time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
-#       else:
-#         remainingProcessing = time_prev-time_curr
-#         if debug: print "return1"
-#         return remainingProcessing, chunkCount
-#     else:
-#       chunkCount +=  1 - chunk_residue    
-#       time_prev += time2FinishResidueChunk #+ getRandomDelay()
-#       # residue chunk is complete so now move to next chunkid and get the actual bitrate of the next chunk
-#       if CHUNK_AWARE_MODE:
-#         chunkid += 1
-#         bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)
-#         time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
-  
-#   processingT = getProcessingDelay(bitrateAtIntervalStart)
-#   #processingT_f = getProcessingDelay_f(bitrate)
-#   # if chunk download time is less than processing time, chunk download time is dominated by processing time
-#   # e.g 5114 bitrate have 3412 processing time, and download time is 100 ms, remaining processing time is 3412 - 100
-#   # e.g 5114 bitrate have 3412 processing time, and download time is 1643 ms, remaing processing time is 3412 - 1643
-#   # e.g 5114 bitrate have 3412 processing time, and download time is 4233 ms, then total download time is 4233 + one frame processing time 
-#   # which is nomally a few hundred msec  
-#   if processingT > time2DownloadFullChunk:
-#     time2DownloadFullChunk = processingT
-#     processingStatus = True
-#   #else:
-#   #  time2DownloadFullChunk+=processingT_f
-  
-#   # loop untill chunks can be downloaded in the interval, after each download add random delay
-#   while time_prev + time2DownloadFullChunk < time_curr:
-#     if processingStatus==True:
-#       processingStatus=False
-#     chunkCount += 1
-#     time_prev += time2DownloadFullChunk #+ getRandomDelay()
-#     if CHUNK_AWARE_MODE:
-#       chunkid += 1
-#       bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)        
-#       time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
-#     processingT = getProcessingDelay(bitrateAtIntervalStart)
-#     if processingT > time2DownloadFullChunk:
-#       time2DownloadFullChunk = processingT
-#       processingStatus = True
-#   # if there is still some time left, download the partial chunk
-#   if processingStatus ==True:
-#     if debug: print "return2"
-#     return (time_prev + time2DownloadFullChunk - time_curr), chunkCount
-#   elif time_prev < time_curr:
-#     chunkCount += round(bandwidth/(float(bitrate) * CHUNKSIZE) * (time_curr - time_prev)/float(1000), 2)
-#     if debug: print "return3"
-#     if debug: print chunkCount, round(bandwidth/(float(bitrate) * CHUNKSIZE) * (time_curr - time_prev)/float(1000), 2)
-# #   print "chunkCount: " + str(chunkCount)
-    
-#     return 0.0, chunkCount
-
-# def getProcessingDelay(br):
-#   return round(sum(processingTime[br])/float(len(processingTime[br])),2)
-#   #return random.choice(processingTime[br])
-
-# def getProcessingDelay_f(br):
-#   return round(sum(processingTime_f[br])/float(len(processingTime_f[br])),2)
-#   #return random.choice(processingTime_f[br])
-
-  
-# Functions we might need
-# 1. swich lock.
-# 2. safe margin.
-
-# just populates the session by assuming that when the session joins one chunk has already been downloaded and a decision has been received
-# def initializeSession(bwArray, bwMap):
-#   BW = int(getInitBW()) 
-#   if(jointime < bwArray[0][0]):
-#     bwMap, bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray, bwMap)
-#   BLEN += CHUNKSIZE
-#   CHUNKS_DOWNLOADED += 1
-#   CANONICAL_TIME = jointime
-#   chunk_residue = 0 # partially downloded chunk
-#   AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
-#   if UTILITY_BITRATE_SELECTION:
-#     newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED)
-#   else:
-#     newBR = getBitrateDecision(BLEN, candidateBR, BW)
-#   if newBR < BR:
-#     SWITCH_LOCK = 15
-#   BR = newBR
-
-
-#     time_next = bwArray[len(bwArray) - 3][0]
-#     bw_next = bwArray[len(bwArray) - 3][1]
-#     time_prev = bwArray[len(bwArray) - 5][0]
-#     bw_prev = bwArray[len(bwArray) - 5][1]
 

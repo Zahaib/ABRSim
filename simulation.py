@@ -2,12 +2,14 @@
 import math, sys, collections
 from config import *
 from helpers import *
+import numpy as np
 # TODO:
 # 1. put the statistics logging inside a function
 # 2. figure out non-conditional and conditional events
 # 3. check whether a print at the end of the session is needed
 # 4. check the bootstrap code and remove the assumptions
 # 5. subtract last chunk's unplayed part from AVG_BITRATE 
+# 6. LOCK should be decremented by the PLAYTIME acquired in an interval rather than interval length
 
 if TRACE_MODE:
   traceFile = sys.argv[1]
@@ -33,9 +35,13 @@ rebufGroundTruth = []
 avgbwSessions = []
 stdbwSessions = []
 completionTimeStamps = []
+maxQoE = -sys.maxint
+optimal_A = 0
+
 
 # for name1, group1 in sessionwise:
-for gggg in range(0,1):
+for A in np.arange(0,1.01,0.01):
+# for A in range(0,1):
   if DEBUG:
     printHeader()
 
@@ -66,27 +72,12 @@ for gggg in range(0,1):
     bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
 
   BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk = bootstrapSim(jointime, BW, BR, CHUNKSIZE)
-
-  # BLEN += CHUNKSIZE
-  # CHUNKS_DOWNLOADED += 1
-  # CLOCK = jointime
-  # chunk_residue = 0 # partially downloded chunk
-  # AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
-
-  oldBR = BR
-  # if UTILITY_BITRATE_SELECTION:
-  #   newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
-  # else:
-  #   newBR = getBitrateDecision(BLEN, candidateBR, BW)
-  # if newBR < BR:
-  #   SWITCH_LOCK = LOCK
-  # BR = newBR
-  
+  oldBR = BR  
   buffering = False
   sessionFullyDownloaded = False
+  numSwitches = 0
 
 #   BW = getInitBW(BR, CLOCK, CHUNKSIZE) # if want to calculate using the jointimems
-
 
   # run the clock till the sessiontime
   while CLOCK - BLEN * 1000 < sessiontimems: 
@@ -165,7 +156,7 @@ for gggg in range(0,1):
 
     # get the bitrate decision for the next interval
     oldBR = BR
-    if not sessionFullyDownloaded:
+    if not first_chunk and not sessionFullyDownloaded:
       if UTILITY_BITRATE_SELECTION:
         newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
       elif BUFFERLEN_UTILITY:
@@ -173,9 +164,11 @@ for gggg in range(0,1):
       elif BANDWIDTH_UTILITY:
         newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
       elif WEIGHTED_BANDWIDTH:
-        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, 0.01) # last parameter is the weight
+        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, A) # last parameter is the weight
       else:
         newBR = getBitrateDecision(BLEN, candidateBR, BW)
+    else:
+      newBR = BR
 
     # make the switch if switching up and no switch lock is active or switching down
     if (newBR > BR and SWITCH_LOCK <= 0) or newBR < BR:
@@ -186,6 +179,10 @@ for gggg in range(0,1):
       # throw away the partially downloaded chunk if a switch is recommended
       chunk_residue = 0         
       
+    # count number of switches
+    if not sessionFullyDownloaded and oldBR != BR:
+      numSwitches += 1
+
     nSamples.append(BW)
     if PS_STYLE_BANDWIDTH:
       BW = interpolateBWPrecisionServerStyle(CLOCK, BLEN, usedBWArray)
@@ -214,6 +211,7 @@ for gggg in range(0,1):
   rebufPrecision.append(REBUF_RATIO)
   avgbitrateGroundTruth.append(bitrate_groundtruth)
   rebufGroundTruth.append(rebuf_groundtruth)
+  QoE = AVG_SESSION_BITRATE - 300 * BUFFTIME - 10 * numSwitches
 #     print AVG_SESSION_BITRATE
   if (AVG_SESSION_BITRATE - bitrate_groundtruth)/float(bitrate_groundtruth) * 100 > 20:
     debugcountP += 1
@@ -232,6 +230,15 @@ for gggg in range(0,1):
   if DEBUG:
     print "\nSimulated session average bitrate = " + str(AVG_SESSION_BITRATE) + " ground truth session = " + str(bitrate_groundtruth)
     print "Simulated session rebuf = " + str(REBUF_RATIO) + " ground truth session = " + str(round(bufftimems/float(bufftimems + playtimems),2))
+    print "Number of switches in the session = " + str(numSwitches)
+    print "Value of A = " + str(A) + " QoE of sessions is: " + str(QoE)
+
+  if maxQoE < QoE:
+    maxQoE = QoE
+    optimal_A = A
+
+print "Max overall QoE = " + str(maxQoE) + " for A = " + str(optimal_A)
+
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)

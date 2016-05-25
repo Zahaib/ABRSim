@@ -1,5 +1,5 @@
 # simulation configuration
-DEBUG = True
+DEBUG = False
 AVERAGE_BANDWIDTH_MODE = False
 # MEDIAN_BITRATE_MODE = True
 CHUNK_AWARE_MODE = False
@@ -18,11 +18,12 @@ conf = {'maxbuflen':120, 'r': 15, 'maxRPct':0.45}
 MAX_BUFFLEN = 120
 LOCK = 15
 
+
 ### ABR configuration ###
 UTILITY_BITRATE_SELECTION = False
-BANDWIDTH_UTILITY = True
+BANDWIDTH_UTILITY = False
 BUFFERLEN_UTILITY = False
-WEIGHTED_BANDWIDTH = False
+WEIGHTED_BANDWIDTH = True
 
  
 
