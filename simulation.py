@@ -62,20 +62,23 @@ for gggg in range(0,1):
   BW = int(getInitBW(bwArray)) 
   if(jointime < bwArray[0][0]):
     bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
-  BLEN += CHUNKSIZE
-  CHUNKS_DOWNLOADED += 1
-  CLOCK = jointime
-  chunk_residue = 0 # partially downloded chunk
-  AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
+  
+  BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk = bootstrapSim(jointime, BW, BR, CHUNKSIZE)
+
+  # BLEN += CHUNKSIZE
+  # CHUNKS_DOWNLOADED += 1
+  # CLOCK = jointime
+  # chunk_residue = 0 # partially downloded chunk
+  # AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
 
   oldBR = BR
-  if UTILITY_BITRATE_SELECTION:
-    newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
-  else:
-    newBR = getBitrateDecision(BLEN, candidateBR, BW)
-  if newBR < BR:
-    SWITCH_LOCK = LOCK
-  BR = newBR
+  # if UTILITY_BITRATE_SELECTION:
+  #   newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
+  # else:
+  #   newBR = getBitrateDecision(BLEN, candidateBR, BW)
+  # if newBR < BR:
+  #   SWITCH_LOCK = LOCK
+  # BR = newBR
 
   buffering = False
   sessionFullyDownloaded = False
@@ -127,6 +130,8 @@ for gggg in range(0,1):
       
     # only append fully downloaded chunks                       
     CHUNKS_DOWNLOADED += int(chd_thisInterval)
+    if first_chunk and CHUNKS_DOWNLOADED >= 1:
+      first_chunk = False
     blenAdded_thisInterval =  int(chd_thisInterval) * CHUNKSIZE
 
     # as long as the session has not finished downloading continue to update the average bitrate
