@@ -36,8 +36,16 @@ def initSysState():
   SWITCH_LOCK = 0
   MAX_BUFFLEN = 120
   LOCK = 15
-
   return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK
+
+def bootstrapSim(jointime, BW, BR, CHUNKSIZE):
+  BLEN = 1
+  CHUNKS_DOWNLOADED = 0
+  CLOCK = jointime
+  chunk_residue = 1.0 / CHUNKSIZE 
+  first_chunk = True
+  return BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk  
+
 
 def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
   sanity = True
