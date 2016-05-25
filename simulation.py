@@ -167,7 +167,7 @@ for gggg in range(0,1):
       elif BANDWIDTH_UTILITY:
         newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
       elif WEIGHTED_BANDWIDTH:
-        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples)
+        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, 0.75) # last parameter is the weight
       else:
         newBR = getBitrateDecision(BLEN, candidateBR, BW)
 

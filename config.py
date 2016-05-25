@@ -10,10 +10,10 @@ DATABRICKS_MODE = False
 conf = {'maxbuflen':120, 'r': 15, 'maxRPct':0.45}
 
 ### ABR configuration ###
-UTILITY_BITRATE_SELECTION = True
+UTILITY_BITRATE_SELECTION = False
 BANDWIDTH_UTILITY = False
 BUFFERLEN_UTILITY = False
-WEIGHTED_BANDWIDTH = False
+WEIGHTED_BANDWIDTH = True
 
  
 

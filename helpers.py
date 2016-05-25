@@ -343,8 +343,8 @@ def getBitrateDecisionBandwidth(bufferlen, bitrates, bandwidth):
   return ret
 
 # function return the bitrate decision as a weighted average: a * BW + (1 - a)Avg(nSamples)
-def getBitrateWeightedBandwidth(bitrates, BW, nSamples):
-  A = 0.75
+def getBitrateWeightedBandwidth(bitrates, BW, nSamples, weight):
+  A = weight
   avg_nSamples = 0.0
   count = 0
   ret = -1
@@ -356,7 +356,6 @@ def getBitrateWeightedBandwidth(bitrates, BW, nSamples):
       avg_nSamples += s
       count += 1
     avg_nSamples /= count
-
     weighted_BW = int(A * avg_nSamples + (1 - A) * BW)
   else:
     weighted_BW = BW
