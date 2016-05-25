@@ -1,5 +1,5 @@
 # SIMULATION 1.0
-import math, collections
+import math, sys, collections
 from config import *
 from helpers import *
 # TODO:
@@ -9,6 +9,8 @@ from helpers import *
 # 4. check the bootstrap code and remove the assumptions
 # 5. subtract last chunk's unplayed part from AVG_BITRATE 
 
+if TRACE_MODE:
+  traceFile = sys.argv[1]
 # def simulate(init, mid, singleSession): # input the pandas dataframe
 # for i in range(500,1000,500):
 hbconfig = [2000,5000,10000,15000,20000]
@@ -47,7 +49,7 @@ for gggg in range(0,1):
     group2 = group1.sort("timestampms")
     candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionState(group2)
   elif TRACE_MODE:
-    candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace('filename')    
+    candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace(traceFile)    
   
   if VALIDATION_MODE:
     bwArray = bwArray[0::2]
