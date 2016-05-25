@@ -34,9 +34,7 @@ def initSysState():
   BW = 0
   AVG_SESSION_BITRATE = 0
   SWITCH_LOCK = 0
-  MAX_BUFFLEN = 120
-  LOCK = 15
-  return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK
+  return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK
 
 def bootstrapSim(jointime, BW, BR, CHUNKSIZE):
   BLEN = 1
@@ -220,7 +218,7 @@ def parseSessionStateFromTrace(filename):
   ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
   bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
   totalTraceTime = ts[-1] # read this value as the last time stamp in the file
-  chunkDuration = 1
+  chunkDuration = 2
   jointimems = 500
 
   return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, 10 #10 , 75 # 
@@ -272,7 +270,7 @@ def pickRandomFromUsedBW(usedBWArray):
   return usedBWArray[random.randint(len(usedBWArray)/2 ,len(usedBWArray) - 1)]
   
 
-# # function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
+# function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
 def getUtilityBitrateDecision(bufferlen, bitrates, bandwidth, chunkid, CHUNKSIZE):
   WEIGHT = 0
   ret = -1;
@@ -367,6 +365,8 @@ def getBitrateWeightedBandwidth(bitrates, BW, nSamples, weight):
     weighted_BW = int(A * avg_nSamples + (1 - A) * BW)
   else:
     weighted_BW = BW
+
+  # print BW, weighted_BW, avg_nSamples
 
   for br in bitrates:
     if br <= weighted_BW:

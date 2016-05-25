@@ -7,6 +7,7 @@ from helpers import *
 # 2. figure out non-conditional and conditional events
 # 3. check whether a print at the end of the session is needed
 # 4. check the bootstrap code and remove the assumptions
+# 5. subtract last chunk's unplayed part from AVG_BITRATE 
 
 # def simulate(init, mid, singleSession): # input the pandas dataframe
 # for i in range(500,1000,500):
@@ -41,11 +42,11 @@ for gggg in range(0,1):
   usedBWArray = []
   bitratesPlayed = dict()
   nSamples = collections.deque(5*[0],5)
-  BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK = initSysState()
+  BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK = initSysState()
   if DATABRICKS_MODE:
     group2 = group1.sort("timestampms")
     candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionState(group2)
-  else:
+  elif TRACE_MODE:
     candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace('filename')    
   
   if VALIDATION_MODE:
@@ -59,8 +60,6 @@ for gggg in range(0,1):
     continue    
 
   BW = int(getInitBW(bwArray))
-  # nSamples.append(BW)
-
   if(jointime < bwArray[0][0]):
     bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
 
@@ -131,6 +130,8 @@ for gggg in range(0,1):
       
     # only append fully downloaded chunks                       
     CHUNKS_DOWNLOADED += int(chd_thisInterval)
+    if first_chunk and CHUNKS_DOWNLOADED >= 1:
+      first_chunk = False
     blenAdded_thisInterval =  int(chd_thisInterval) * CHUNKSIZE
 
     # as long as the session has not finished downloading continue to update the average bitrate
@@ -170,7 +171,7 @@ for gggg in range(0,1):
       elif BANDWIDTH_UTILITY:
         newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
       elif WEIGHTED_BANDWIDTH:
-        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, 0.75) # last parameter is the weight
+        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, 0.01) # last parameter is the weight
       else:
         newBR = getBitrateDecision(BLEN, candidateBR, BW)
 
