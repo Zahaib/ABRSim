@@ -63,21 +63,24 @@ for gggg in range(0,1):
 
   if(jointime < bwArray[0][0]):
     bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
-  BLEN += CHUNKSIZE
-  CHUNKS_DOWNLOADED += 1
-  CLOCK = jointime
-  chunk_residue = 0 # partially downloded chunk
-  AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
+
+  BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk = bootstrapSim(jointime, BW, BR, CHUNKSIZE)
+
+  # BLEN += CHUNKSIZE
+  # CHUNKS_DOWNLOADED += 1
+  # CLOCK = jointime
+  # chunk_residue = 0 # partially downloded chunk
+  # AVG_SESSION_BITRATE += 1 * BR * CHUNKSIZE
 
   oldBR = BR
-  if UTILITY_BITRATE_SELECTION:
-    newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
-  else:
-    newBR = getBitrateDecision(BLEN, candidateBR, BW)
-  if newBR < BR:
-    SWITCH_LOCK = LOCK
-  BR = newBR
-
+  # if UTILITY_BITRATE_SELECTION:
+  #   newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
+  # else:
+  #   newBR = getBitrateDecision(BLEN, candidateBR, BW)
+  # if newBR < BR:
+  #   SWITCH_LOCK = LOCK
+  # BR = newBR
+  
   buffering = False
   sessionFullyDownloaded = False
 
