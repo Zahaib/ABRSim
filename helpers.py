@@ -205,9 +205,15 @@ def parseSessionState(group):
 
 # function intializes session state
 def parseSessionStateFromTrace(filename):
-  bitrates = [150, 250, 400] # candidate bitrates are in kbps, you can change these to suite your values
-  ts = []
-  bw = []
+  ts, bw = [], []
+  ls = open(filename).readlines()
+  for l in ls:
+    ts.append(float(l.split(" ")[0]))
+    bw.append(float(l.split(" ")[1]))
+  
+  bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
+  #ts = []
+  #bw = []
 
   # now write the code to read the trace file
 
@@ -215,13 +221,13 @@ def parseSessionStateFromTrace(filename):
   #   ts.append(group.irow(j)["timestampms"])
   #   bw.append(group.irow(j)["bandwidth"])
 
-  ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
-  bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
+  #ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
+  #bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
   totalTraceTime = ts[-1] # read this value as the last time stamp in the file
-  chunkDuration = 2
+  chunkDuration = 5
   jointimems = 500
 
-  return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, 10 #10 , 75 # 
+  return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, sys.maxint #10 , 75 # 
 
 
 # function returns interpolated bandwidth at the time of the heartbeat
