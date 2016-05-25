@@ -342,6 +342,34 @@ def getBitrateDecisionBandwidth(bufferlen, bitrates, bandwidth):
     ret = bitrates[0]
   return ret
 
+# function return the bitrate decision as a weighted average: a * BW + (1 - a)Avg(nSamples)
+def getBitrateWeightedBandwidth(bitrates, BW, nSamples):
+  A = 0.75
+  avg_nSamples = 0.0
+  count = 0
+  ret = -1
+  weighted_BW = -1
+  if nSamples.count(0) != 5:
+    for s in nSamples:
+      if s == 0:
+        continue
+      avg_nSamples += s
+      count += 1
+    avg_nSamples /= count
+
+    weighted_BW = int(A * avg_nSamples + (1 - A) * BW)
+  else:
+    weighted_BW = BW
+
+  for br in bitrates:
+    if br <= weighted_BW:
+      ret = br
+
+  if ret == -1:
+    ret = bitrates[0]
+  
+  return ret
+
 # returns a bwArray of average of bandwidth at every 10 second interval
 def validationBWMap(bwArray):
   ts = []

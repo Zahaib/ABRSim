@@ -1,5 +1,5 @@
 # SIMULATION 1.0
-import math
+import math, collections
 from config import *
 from helpers import *
 # TODO:
@@ -40,6 +40,7 @@ for gggg in range(0,1):
   sizeDict = dict()
   usedBWArray = []
   bitratesPlayed = dict()
+  nSamples = collections.deque(5*[0],5)
   BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, MAX_BUFFLEN, LOCK = initSysState()
   if DATABRICKS_MODE:
     group2 = group1.sort("timestampms")
@@ -57,7 +58,9 @@ for gggg in range(0,1):
   if not isSane(bwArray, BR, stdbw, avgbw, sizeDict):
     continue    
 
-  BW = int(getInitBW(bwArray)) 
+  BW = int(getInitBW(bwArray))
+  # nSamples.append(BW)
+
   if(jointime < bwArray[0][0]):
     bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
   BLEN += CHUNKSIZE
@@ -163,6 +166,8 @@ for gggg in range(0,1):
         newBR = getBitrateBBA0(BLEN, candidateBR, conf)
       elif BANDWIDTH_UTILITY:
         newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
+      elif WEIGHTED_BANDWIDTH:
+        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples)
       else:
         newBR = getBitrateDecision(BLEN, candidateBR, BW)
 
@@ -175,6 +180,7 @@ for gggg in range(0,1):
       # throw away the partially downloaded chunk if a switch is recommended
       chunk_residue = 0         
       
+    nSamples.append(BW)
     if PS_STYLE_BANDWIDTH:
       BW = interpolateBWPrecisionServerStyle(CLOCK, BLEN, usedBWArray)
     else:
