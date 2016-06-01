@@ -38,10 +38,9 @@ completionTimeStamps = []
 maxQoE = -sys.maxint
 optimal_A = 0
 
-
 # for name1, group1 in sessionwise:
-for A in np.arange(0,1.01,0.01):
-# for A in range(0,1):
+#for A in np.arange(0,1.01,0.01):
+for A in range(0,1):
   if DEBUG:
     printHeader()
 
@@ -164,7 +163,7 @@ for A in np.arange(0,1.01,0.01):
       elif BANDWIDTH_UTILITY:
         newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
       elif WEIGHTED_BANDWIDTH:
-        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, A) # last parameter is the weight
+        newBR = getBitrateWeightedBandwidth(candidateBR, BW, nSamples, 0.35) # last parameter is the weight
       else:
         newBR = getBitrateDecision(BLEN, candidateBR, BW)
     else:
@@ -237,8 +236,11 @@ for A in np.arange(0,1.01,0.01):
     maxQoE = QoE
     optimal_A = A
 
-print "Max overall QoE = " + str(maxQoE) + " for A = " + str(optimal_A)
-
+#print "Max overall QoE = " + str(maxQoE) + " for A = " + str(optimal_A)
+if maxQoE == -sys.maxint:
+  print "#"
+else:
+  print maxQoE, AVG_SESSION_BITRATE, BUFFTIME, numSwitches
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)
