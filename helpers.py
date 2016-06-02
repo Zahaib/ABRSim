@@ -212,7 +212,7 @@ def parseSessionStateFromTrace(filename):
     bw.append(float(l.split(" ")[1]))
   
   # bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
-  bitrates  = range(150,2050,400)
+  bitrates  = range(550,2450,400)
   #ts = []
   #bw = []
 
@@ -278,8 +278,9 @@ def pickRandomFromUsedBW(usedBWArray):
   
 # utility function:
   # pick the highest bitrate that will not introduce buffering
-def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE):
-  BUFFER_SAFETY_MARGIN = 0.275
+def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN):
+  if BUFFER_SAFETY_MARGIN == -1:
+    BUFFER_SAFETY_MARGIN = 0.25
   BUFFERING_WEIGHT = -1000
   BITRATE_WEIGHT = 1
   BANDWIDTH_SAFETY_MARGIN = 1 # 0.90
@@ -305,6 +306,32 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
     ret = candidateBitrates[0]
   return ret
 
+# function to get the best value of the Buffer Safety Margin
+def getDynamicBSM(nSamples, hbCount, BSM): 
+  if hbCount < 5:
+    return 0.25
+  stdbw = []
+  if nSamples.count(0) != 5:
+    for s in nSamples:
+      if s == 0:
+        continue
+      stdbw.append(s)
+  CV = np.std(stdbw) / np.mean(stdbw)
+  BUFFER_SAFETY_MARGIN = 0.0
+  if hbCount % 5 != 0:
+    return BSM
+  if hbCount != 0 and hbCount % 5 == 0:
+    if CV >= 0 and CV < 0.1:
+      BUFFER_SAFETY_MARGIN = 0.85
+    elif CV >= 0.1 and CV < 0.2:
+      BUFFER_SAFETY_MARGIN = 0.65
+    elif CV >= 0.2 and CV < 0.3:
+      BUFFER_SAFETY_MARGIN = 0.45
+    elif CV >= 0.3 and CV < 0.4:
+      BUFFER_SAFETY_MARGIN = 0.35
+    else:
+      BUFFER_SAFETY_MARGIN = 0.20
+  return BUFFER_SAFETY_MARGIN
 
 # function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
 def getUtilityBitrateDecisionBasic(bufferlen, bitrates, bandwidth, chunkid, CHUNKSIZE):

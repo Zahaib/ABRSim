@@ -49,6 +49,8 @@ for A in range(0,1):
   usedBWArray = []
   bitratesPlayed = dict()
   nSamples = collections.deque(5*[0],5)
+  hbCount = 0
+  BSM = -1.0
   BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK = initSysState()
   if DATABRICKS_MODE:
     group2 = group1.sort("timestampms")
@@ -152,12 +154,15 @@ for A in range(0,1):
     ####################################################################################################################################################
 
     # then take care of the conditional events #########################################################################################################
-
+    
+    # get Dynamic BSM
+    if DYNAMIC_BSM:
+      BSM = getDynamicBSM(nSamples, hbCount, BSM)
     # get the bitrate decision for the next interval
     oldBR = BR
     if not first_chunk and not sessionFullyDownloaded:
       if UTILITY_BITRATE_SELECTION:
-        newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
+        newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM)
       elif BUFFERLEN_UTILITY:
         newBR = getBitrateBBA0(BLEN, candidateBR, conf)
       elif BANDWIDTH_UTILITY:
@@ -188,6 +193,7 @@ for A in range(0,1):
     else:
       BW = max(interpolateBWInterval(CLOCK, usedBWArray, bwArray),0.01) # interpolate bandwidth for the next heartbeat interval
     usedBWArray.append(BW) # save the bandwidth used in the session
+    hbCount += 1
 
 ####################################################################################################################################################
 
@@ -196,8 +202,8 @@ for A in range(0,1):
     printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
 
   # if sessions has bad bandwidth info, just omit it
-  if 0.01 in usedBWArray:
-    continue
+  #if 0.01 in usedBWArray:
+  #  continue
 
   # generate the statistics for the session ########################################################################################################
   NUM_SESSIONS += 1
