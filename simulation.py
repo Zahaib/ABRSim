@@ -246,7 +246,7 @@ for A in range(0,1):
 if maxQoE == -sys.maxint:
   print "#"
 else:
-  print maxQoE, AVG_SESSION_BITRATE, BUFFTIME, numSwitches
+  print "maxQoE: " + str(maxQoE) + " avg. bitrate: " + str(AVG_SESSION_BITRATE) +  " buf. ratio: " + str(BUFFTIME/float(PLAYTIME + BUFFTIME)) + " numSwtiches: " + str(numSwitches)
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)
