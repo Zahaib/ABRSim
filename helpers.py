@@ -10,7 +10,7 @@ def getDominant(dominantBitrate):
     if maxFreq <= dominantBitrate[b]:
       ret = b
       maxFreq = dominantBitrate[b]
-  print dominantBitrate.items()
+  #print dominantBitrate.items()
   return ret, maxFreq, sum(dominantBitrate.values())
 
 
