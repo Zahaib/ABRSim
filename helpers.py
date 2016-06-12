@@ -212,7 +212,8 @@ def parseSessionStateFromTrace(filename):
     bw.append(float(l.split(" ")[1]))
   
   # bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
-  bitrates  = range(550,2450,400)
+  bitrates = [350, 700, 1200, 2400, 4800]
+  #bitrates  = range(550,2450,400)
   #ts = []
   #bw = []
 
