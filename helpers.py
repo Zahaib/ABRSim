@@ -2,6 +2,18 @@
 import numpy as np
 import random, sys
 from config import *
+# function returns the most dominant bitrate played, if two are dominant it returns the bigger of two
+def getDominant(dominantBitrate):
+  ret = 0
+  maxFreq = -sys.maxint
+  for b in dominantBitrate.keys():
+    if maxFreq <= dominantBitrate[b]:
+      ret = b
+      maxFreq = dominantBitrate[b]
+  print dominantBitrate.items()
+  return ret, maxFreq, sum(dominantBitrate.values())
+
+
 # function return the initial bandwidth using the jointime of the session
 def printPercentile(target):
   for i in range (0,101):

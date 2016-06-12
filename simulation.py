@@ -7,7 +7,7 @@ import numpy as np
 # 1. put the statistics logging inside a function
 # 2. figure out non-conditional and conditional events
 # 3. check whether a print at the end of the session is needed
-# 4. check the bootstrap code and remove the assumptions
+# 4. check the bootstrap code and remove the assumptions (done)
 # 5. subtract last chunk's unplayed part from AVG_BITRATE 
 # 6. LOCK should be decremented by the PLAYTIME acquired in an interval rather than interval length
 
@@ -77,6 +77,7 @@ for A in range(0,1):
   buffering = False
   sessionFullyDownloaded = False
   numSwitches = 0
+  dominantBitrate = dict()
 
 #   BW = getInitBW(BR, CLOCK, CHUNKSIZE) # if want to calculate using the jointimems
 
@@ -124,6 +125,13 @@ for A in range(0,1):
       
     # only append fully downloaded chunks                       
     CHUNKS_DOWNLOADED += int(chd_thisInterval)
+    
+    # updatet the dictionary with count of bitrates played 
+    if BR in dominantBitrate:
+      dominantBitrate[BR] += int(chd_thisInterval)
+    else:
+      dominantBitrate[BR] = int(chd_thisInterval)
+
     if first_chunk and CHUNKS_DOWNLOADED >= 1:
       first_chunk = False
     blenAdded_thisInterval =  int(chd_thisInterval) * CHUNKSIZE
@@ -246,7 +254,8 @@ for A in range(0,1):
 if maxQoE == -sys.maxint:
   print "#"
 else:
-  print "maxQoE: " + str(maxQoE) + " avg. bitrate: " + str(AVG_SESSION_BITRATE) +  " buf. ratio: " + str(BUFFTIME/float(PLAYTIME + BUFFTIME)) + " numSwtiches: " + str(numSwitches)
+  domBR, freq, totalFreq = getDominant(dominantBitrate)
+  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(AVG_SESSION_BITRATE) +  " buf. ratio: " + str(BUFFTIME/float(PLAYTIME + BUFFTIME)) + " numSwtiches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq)
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)
