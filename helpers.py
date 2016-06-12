@@ -6,7 +6,7 @@ from config import *
 def getDominant(dominantBitrate):
   ret = 0
   maxFreq = -sys.maxint
-  for b in dominantBitrate.keys():
+  for b in sorted(dominantBitrate.keys()):
     if maxFreq <= dominantBitrate[b]:
       ret = b
       maxFreq = dominantBitrate[b]
