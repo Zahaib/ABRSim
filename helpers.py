@@ -40,7 +40,7 @@ def initSysState():
   BUFFTIME = 0
   PLAYTIME = 0
   CANONICAL_TIME = 0
-  INIT_HB = 200
+  INIT_HB = 500
   MID_HB = 500
   BR = 0
   BW = 0
@@ -90,7 +90,7 @@ def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
   return sanity      
 
 def generateStats(AVG_SESSION_BITRATE, BUFFTIME, PLAYTIME, bufftimems, playtimems):
-  AVG_SESSION_BITRATE = (AVG_SESSION_BITRATE/float(playtimems/float(1000))) # add float
+  AVG_SESSION_BITRATE = (AVG_SESSION_BITRATE/float(PLAYTIME)) # add float
   REBUF_RATIO = round(BUFFTIME/float(BUFFTIME + PLAYTIME),3)
   rebuf_groundtruth = round(bufftimems/float(bufftimems + playtimems),3)
   
@@ -220,11 +220,13 @@ def parseSessionStateFromTrace(filename):
   ts, bw = [], []
   ls = open(filename).readlines()
   for l in ls:
+    if l in ['\n', '\r\n']:
+      continue
     ts.append(float(l.split(" ")[0]))
     bw.append(float(l.split(" ")[1]))
   
   # bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
-  bitrates  = range(550,2450,400)
+  bitrates  = range(150,2150,400)
   #ts = []
   #bw = []
 

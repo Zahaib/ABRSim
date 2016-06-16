@@ -12,7 +12,7 @@ DATABRICKS_MODE = False
 TRACE_MODE = True
 
 ### BB ABR configuration
-conf = {'maxbuflen':120, 'r': 15, 'maxRPct':0.45}
+conf = {'maxbuflen':120, 'r': 1, 'maxRPct':0.90}
 
 ### Player properties ###
 MAX_BUFFLEN = 120

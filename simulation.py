@@ -39,11 +39,10 @@ maxQoE = -sys.maxint
 optimal_A = 0
 
 # for name1, group1 in sessionwise:
-#for A in np.arange(0,1.01,0.01):
-for A in range(0,1):
+for A in np.arange(0.01,1.01,0.01):
+#for A in range(0,1):
   if DEBUG:
     printHeader()
-
   bwMap = dict()
   sizeDict = dict()
   usedBWArray = []
@@ -163,6 +162,10 @@ for A in range(0,1):
 
     # then take care of the conditional events #########################################################################################################
     
+    BSM = A
+    #conf['r'] = A
+    #print conf['r']    
+    #print A
     # get Dynamic BSM
     if DYNAMIC_BSM:
       BSM = getDynamicBSM(nSamples, hbCount, BSM)
@@ -216,7 +219,6 @@ for A in range(0,1):
   # generate the statistics for the session ########################################################################################################
   NUM_SESSIONS += 1
   AVG_SESSION_BITRATE, REBUF_RATIO, rebuf_groundtruth = generateStats(AVG_SESSION_BITRATE, BUFFTIME, PLAYTIME, bufftimems, playtimems)
-
   avgbw, stdbw = getBWStdDev(bwArray)
   avgbwSessions.append(avgbw)
   stdbwSessions.append(stdbw)
@@ -224,8 +226,9 @@ for A in range(0,1):
   rebufPrecision.append(REBUF_RATIO)
   avgbitrateGroundTruth.append(bitrate_groundtruth)
   rebufGroundTruth.append(rebuf_groundtruth)
-  QoE = AVG_SESSION_BITRATE - 300 * BUFFTIME - 10 * numSwitches
-#     print AVG_SESSION_BITRATE
+  # QoE calculation done as a weighted average of Avg. bitrate, Rebuf. ratio and Num. Switches
+  QoE = AVG_SESSION_BITRATE - 3000 * BUFFTIME / (BUFFTIME + PLAYTIME) #- 10 * numSwitches
+
   if (AVG_SESSION_BITRATE - bitrate_groundtruth)/float(bitrate_groundtruth) * 100 > 20:
     debugcountP += 1
   if (AVG_SESSION_BITRATE - bitrate_groundtruth)/float(bitrate_groundtruth) * 100 < -20:
@@ -255,7 +258,7 @@ if maxQoE == -sys.maxint:
   print "#"
 else:
   domBR, freq, totalFreq = getDominant(dominantBitrate)
-  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(AVG_SESSION_BITRATE) +  " buf. ratio: " + str(BUFFTIME/float(PLAYTIME + BUFFTIME)) + " numSwtiches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq)
+  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(AVG_SESSION_BITRATE) +  " buf. ratio: " + str(BUFFTIME/float(PLAYTIME + BUFFTIME)) + " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED) 
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)
