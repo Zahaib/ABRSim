@@ -37,7 +37,9 @@ stdbwSessions = []
 completionTimeStamps = []
 maxQoE = -sys.maxint
 optimal_A = 0
-
+optimal_bitrate = 0
+optimal_rebuf = 0
+optimal_domBR = 0
 # for name1, group1 in sessionwise:
 for A in np.arange(0.01,1.01,0.01):
 #for A in range(0,1):
@@ -249,16 +251,22 @@ for A in np.arange(0.01,1.01,0.01):
     print "Number of switches in the session = " + str(numSwitches)
     print "Value of A = " + str(A) + " QoE of sessions is: " + str(QoE)
 
+  # if new QoE is 10% greater than the previous max, then update it
+  #if maxQoE + abs(0.1 * maxQoE) < QoE:
   if maxQoE < QoE:
     maxQoE = QoE
     optimal_A = A
+    optimal_bitrate = AVG_SESSION_BITRATE
+    optimal_rebuf = REBUF_RATIO
+    #optimal_domBR = domBR
+    #optimal_freq = freq
 
 #print "Max overall QoE = " + str(maxQoE) + " for A = " + str(optimal_A)
 if maxQoE == -sys.maxint:
   print "#"
 else:
   domBR, freq, totalFreq = getDominant(dominantBitrate)
-  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(AVG_SESSION_BITRATE) +  " buf. ratio: " + str(BUFFTIME/float(PLAYTIME + BUFFTIME)) + " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED) 
+  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED) 
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)
