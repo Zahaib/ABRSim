@@ -2,6 +2,7 @@
 import numpy as np
 import random, sys
 from config import *
+from chunkMap import *
 # function returns the most dominant bitrate played, if two are dominant it returns the bigger of two
 def getDominant(dominantBitrate):
   ret = 0
@@ -153,7 +154,7 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
   completionTimeStamps = []
   bitrateAtIntervalStart = bitrate
   if CHUNK_AWARE_MODE:
-    bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)
+    bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
 
   time2FinishResidueChunk = (((1 - chunk_residue) * bitrate * CHUNKSIZE)/float(bandwidth)) * 1000
   time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
@@ -164,7 +165,7 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
     time_prev += time2FinishResidueChunk + getRandomDelay()
     # residue chunk is complete so now move to next chunkid and get the actual bitrate of the next chunk
     if CHUNK_AWARE_MODE:
-      bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)
+      bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
     bandwidth = max(interpolateBWInterval(time_prev, usedBWArray, bwArray),0.01)
     chunkid += 1
     time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
@@ -192,7 +193,7 @@ def getRandomDelay():
   return random.randint(150, 250)
 
 # function returns the actual bitrate of the label bitrate and the specific chunk
-def getRealBitrate(bitrate, chunkid):
+def getRealBitrate(bitrate, chunkid, CHUNKSIZE):
   ret = bitrate
   if CHUNK_AWARE_MODE and bitrate in sizeDict and chunkid in sizeDict[bitrate]:
     ret = sizeDict[bitrate][chunkid] * 8/float(CHUNKSIZE * 1000)
@@ -225,8 +226,8 @@ def parseSessionStateFromTrace(filename):
     ts.append(float(l.split(" ")[0]))
     bw.append(float(l.split(" ")[1]))
   
-  # bitrates = [150, 200, 250, 300, 350] # candidate bitrates are in kbps, you can change these to suite your values
-  bitrates  = range(150,2150,400)
+  bitrates = [1002, 1434, 2738, 3585, 4661, 5885] # candidate bitrates are in kbps, you can change these to suite your values
+  #bitrates  = range(150,2150,400)
   #ts = []
   #bw = []
 
@@ -307,6 +308,9 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
   for br in candidateBitrates:
 #     if bandwidth < br * BANDWIDTH_SAFETY_MARGIN:
 #       continue
+# the buffer len you will add: sum of buffer you will download plus current buffer. If current buffer is zero then the 
+# amount you will add is a function of bandwidth alone. If the bandwidth is zero, then the buffer you have is just the 
+# current value of the buffer. 
     actualbitrate = br
     if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
     bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE      
@@ -374,7 +378,7 @@ def getBitrateBBA0(bufferlen, candidateBitRate, conf):
   maxbuflen = conf['maxbuflen']
   reservoir = conf['r']
   maxRPct = conf['maxRPct']
-
+#  print maxbuflen, reservoir, maxRPct, int(maxbuflen * maxRPct)
   assert (maxbuflen > 30), "too small max player buffer length"
   assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
   assert (maxRPct < 1)
