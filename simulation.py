@@ -5,6 +5,7 @@ from helpers import *
 from chunkMap import *
 from algorithms import *
 import numpy as np
+import collections
 # TODO:
 # 1. put the statistics logging inside a function
 # 2. figure out non-conditional and conditional events
@@ -44,6 +45,7 @@ optimal_rebuf = 0
 optimal_domBR = 0
 AVG_SESSION_BITRATE = 0
 upr_end = 0
+allPerf = collections.OrderedDict()
 if BUFFERLEN_UTILITY == False:
   upr_end = 0.271
 else:
@@ -263,6 +265,7 @@ for upr in np.arange(0.27, upr_end, 0.01):
       print "Number of switches in the session = " + str(numSwitches)
       print "Value of A = " + str(A) + " QoE of sessions is: " + str(QoE)
 
+    allPerf[str(upr) + " " + str(A)] = str(AVG_SESSION_BITRATE) + " " + str(REBUF_RATIO)
     # if new QoE is 10% greater than the previous max, then update it
     if maxQoE + abs(0.1 * maxQoE) < QoE:
     #if maxQoE < QoE:
@@ -278,7 +281,8 @@ if maxQoE == -sys.maxint:
   print "#"
 else:
   domBR, freq, totalFreq = getDominant(dominantBitrate)
-  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED) 
+  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED)
+#  print allPerf 
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)
 #   print "Total debugN: " + str(debugcountN)
