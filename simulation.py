@@ -42,11 +42,17 @@ optimal_bitrate = 0
 optimal_rebuf = 0
 optimal_domBR = 0
 AVG_SESSION_BITRATE = 0
+upr_end = 0
+if BUFFERLEN_UTILITY == False:
+  upr_end = 0.271
+else:
+  upr_end = 1.0
 # for name1, group1 in sessionwise:
-#for A in np.arange(0.01,1.01,0.01):
-for upr in np.arange(0.27,1.0,0.01):
-  #for A in range(0,1):
-  for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
+for upr in np.arange(0.27, upr_end, 0.01):
+  # uncomment the line below if running for Hybrid ABR
+  for A in np.arange(0.01,1.01,0.01):
+  # comment the line below if running for Hybrid ABR
+  #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
       printHeader()
     bwMap = dict()
@@ -168,7 +174,7 @@ for upr in np.arange(0.27,1.0,0.01):
 
       # then take care of the conditional events #########################################################################################################
       
-      #BSM = A
+      BSM = A
       conf['r'] = A
       conf['maxRPct'] = upr
       #print conf['r']    

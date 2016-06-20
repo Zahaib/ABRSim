@@ -312,7 +312,7 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
 # amount you will add is a function of bandwidth alone. If the bandwidth is zero, then the buffer you have is just the 
 # current value of the buffer. 
     actualbitrate = br
-    if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
+    if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid, CHUNKSIZE) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
     bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE      
     estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
     if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT:
