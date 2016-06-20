@@ -3,6 +3,7 @@ import math, sys, collections
 from config import *
 from helpers import *
 from chunkMap import *
+from algorithms import *
 import numpy as np
 # TODO:
 # 1. put the statistics logging inside a function
