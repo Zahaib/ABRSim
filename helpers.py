@@ -176,7 +176,7 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
     completionTimeStamps.append(time_prev + time2DownloadFullChunk)
     time_prev += time2DownloadFullChunk + getRandomDelay()
     if CHUNK_AWARE_MODE:
-      bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid)
+      bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
     # print time_prev, usedBWArray        
     bandwidth = max(interpolateBWInterval(time_prev, usedBWArray, bwArray),0.01)
     chunkid += 1
