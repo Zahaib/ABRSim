@@ -69,7 +69,7 @@ def getBitrateBBA0(bufferlen, candidateBitRate, conf):
   assert (maxbuflen > 30), "too small max player buffer length"
   assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
   assert (maxRPct < 1)
-  assert (bufferlen < maxbuflen), "bufferlen greater than maxbufferlen"
+  assert (bufferlen <= maxbuflen), "bufferlen greater than maxbufferlen"
 
   upperReservoir = int(maxbuflen * maxRPct)
 
@@ -112,7 +112,7 @@ def getBitrateBBA2(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrat
   assert (maxbuflen > 30), "too small max player buffer length"
   assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
   assert (maxRPct < 1)
-  assert (bufferlen < maxbuflen), "bufferlen greater than maxbufferlen"
+  assert (bufferlen <= maxbuflen), "bufferlen greater than maxbufferlen"
 
   # calculate the fallback buffer if the dynamic calculation fails
   upperReservoir = int(maxbuflen * maxRPct)
@@ -170,10 +170,6 @@ def getBitrateBBA2(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrat
   return interpolatedCandidate
     
 
-# if the interpolated rate is not higher and buffer hasn't started decreasing
-# do the interpolated calculation first and keep a flag which decides that buffer had started dec
-# then calculate the startup bitrates based on the startup heuristic: 8 times, 4 times, 2 times
-
 # function returns the bitrate decision given the bufferlen using BBA2 in T.Y paper.
 def getBitrateBBA1(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrate, bandwidth):
   maxbuflen = conf['maxbuflen']
@@ -183,7 +179,7 @@ def getBitrateBBA1(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrat
   assert (maxbuflen > 30), "too small max player buffer length"
   assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
   assert (maxRPct < 1)
-  assert (bufferlen < maxbuflen), "bufferlen greater than maxbufferlen"
+  assert (bufferlen <= maxbuflen), "bufferlen greater than maxbufferlen"
 
   # calculate the fallback buffer if the dynamic calculation fails
   upperReservoir = int(maxbuflen * maxRPct)
