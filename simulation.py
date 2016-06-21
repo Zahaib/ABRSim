@@ -51,7 +51,7 @@ if BUFFERLEN_UTILITY == False:
 else:
   upr_end = 1.0
 # for name1, group1 in sessionwise:
-for upr in np.arange(0.27, upr_end, 0.01):
+for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
   for A in np.arange(0.01,1.01,0.01):
