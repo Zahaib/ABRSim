@@ -103,9 +103,8 @@ def getBitrateBBA0(bufferlen, candidateBitRate, conf):
       return candidateBitRate[idx-1]
 
 
-
 # function returns the bitrate decision given the bufferlen using BBA2 in T.Y paper.
-def getBitrateBBA2(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrate, bandwidth):
+def getBitrateBBA2(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrate, bandwidth, blen_decrease):
   maxbuflen = conf['maxbuflen']
   reservoir = conf['r']
   maxRPct = conf['maxRPct']
@@ -115,6 +114,78 @@ def getBitrateBBA2(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrat
   assert (maxRPct < 1)
   assert (bufferlen < maxbuflen), "bufferlen greater than maxbufferlen"
 
+  # calculate the fallback buffer if the dynamic calculation fails
+  upperReservoir = int(maxbuflen * maxRPct)
+
+  R_min = candidateBitRate[0]
+  R_max = candidateBitRate[-1]
+  # get the dynamic value of the reservoir
+  reservoir = dynamicReservoir(bandwidth, chunkid, X, reservoir, CHUNKSIZE, bitrate, candidateBitRate)
+  # if bufferlen is small, return R_min
+  if (bufferlen <=reservoir):
+    return R_min
+  # if bufferlen is close to full, return R_max
+  if (bufferlen >=upperReservoir):
+    return R_max
+
+  # linear interpolation of the bufferlen vs bit-rate
+  RGap = R_max - R_min
+  BGap = upperReservoir - reservoir
+
+  assert (RGap > 100), "R_max and R_min need at least 100kbps gap"
+  assert (BGap > 30), "upper reservoir and reservoir need at least 30s gap"
+
+  # based on the slope calc. ideal bit-rate
+  RIdeal = R_min + int((bufferlen - reservoir) * RGap * 1.0 / (BGap*1.0))
+
+  #print "RGap = %d, BGap=%d, RIdeal=%d" % (RGap, BGap, RIdeal)
+  interpolatedCandidate = 0
+  # find the max rate that is lower than then ideal one.
+  for idx in range(len(candidateBitRate)):
+    if RIdeal < sizeDict[candidateBitRate[idx]][chunkid]:
+      interpolatedCandidate = candidateBitRate[idx-1]
+      break
+  
+  startupCandidate = -1
+  threshold = 0.0
+  if not blen_decrease:
+    if bufferlen >= 0 and bufferlen < int(upperReservoir / 8):
+      threshold = 8.0
+    elif bufferlen >= int(upperReservoir / 8) and bufferlen < int(upperReservoir / 4):
+      threshold = 4.0
+    elif bufferlen >= int(upperReservoir / 4) and bufferlen < int(upperReservoir / 1):
+      threshold = 2.0
+    else:
+      return interpolatedCandidate
+
+  if chunkid < len(sizeDict[bitrate]) and CHUNKSIZE / (((sizeDict[bitrate][chunkid] / 1000) * CHUNKSIZE) / float(bandwidth)) > threshold:
+    newIndex = candidateBitRate.index(bitrate) + 1
+    if newIndex >= len(candidateBitRate):
+      newIndex -= 1
+    startupCandidate = candidateBitRate[newIndex]
+
+  if startupCandidate > interpolatedCandidate:
+    return startupCandidate
+
+  return interpolatedCandidate
+    
+
+# if the interpolated rate is not higher and buffer hasn't started decreasing
+# do the interpolated calculation first and keep a flag which decides that buffer had started dec
+# then calculate the startup bitrates based on the startup heuristic: 8 times, 4 times, 2 times
+
+# function returns the bitrate decision given the bufferlen using BBA2 in T.Y paper.
+def getBitrateBBA1(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrate, bandwidth):
+  maxbuflen = conf['maxbuflen']
+  reservoir = conf['r']
+  maxRPct = conf['maxRPct']
+  X = conf['xLookahead']
+  assert (maxbuflen > 30), "too small max player buffer length"
+  assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
+  assert (maxRPct < 1)
+  assert (bufferlen < maxbuflen), "bufferlen greater than maxbufferlen"
+
+  # calculate the fallback buffer if the dynamic calculation fails
   upperReservoir = int(maxbuflen * maxRPct)
 
   R_min = candidateBitRate[0]

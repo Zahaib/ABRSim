@@ -51,7 +51,7 @@ if BUFFERLEN_UTILITY == False:
   upr_end = 0.271
 else:
   upr_end = 1.0
-if BUFFERLEN_BBA2_UTILITY == True:
+if BUFFERLEN_BBA1_UTILITY == True or BUFFERLEN_BBA2_UTILITY == True:
   A_end = 0.02
 else:
   A_end = 1.01
@@ -71,6 +71,7 @@ for upr in np.arange(0.27, upr_end, 0.05):
     nSamples = collections.deque(5*[0],5)
     hbCount = 0
     BSM = -1.0
+    blen_decrease = False
     BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK = initSysState()
     if DATABRICKS_MODE:
       group2 = group1.sort("timestampms")
@@ -173,12 +174,16 @@ for upr in np.arange(0.27, upr_end, 0.05):
       BUFFTIME += playStalled_thisInterval
       PLAYTIME += interval/float(1000) - playStalled_thisInterval # add float
 
+      lastBlen = BLEN
       # update the bufferlen at the end of this interval
       if buffering:
 	BLEN = 0
       else:
 	BLEN = max(0, CHUNKS_DOWNLOADED * CHUNKSIZE - PLAYTIME) # else update the bufferlen to take into account the current time step
 
+      # check if the BLEN starts to decrease for the first time
+      if lastBlen > BLEN and blen_decrease == False and CHUNKS_DOWNLOADED > 1:
+        blen_decrease = True
       ####################################################################################################################################################
 
       # then take care of the conditional events #########################################################################################################
@@ -198,8 +203,10 @@ for upr in np.arange(0.27, upr_end, 0.05):
           conf['r'] = A
           conf['maxRPct'] = upr
 	  newBR = getBitrateBBA0(BLEN, candidateBR, conf)
+        elif BUFFERLEN_BBA1_UTILITY:
+          newBR = getBitrateBBA1(BLEN, candidateBR, conf, CHUNKS_DOWNLOADED, CHUNKSIZE, BR, BW)
         elif BUFFERLEN_BBA2_UTILITY:
-          newBR = getBitrateBBA2(BLEN, candidateBR, conf, CHUNKS_DOWNLOADED, CHUNKSIZE, BR, BW)
+          newBR = getBitrateBBA2(BLEN, candidateBR, conf, CHUNKS_DOWNLOADED, CHUNKSIZE, BR, BW, blen_decrease)
 	elif BANDWIDTH_UTILITY:
 	  newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
 	elif WEIGHTED_BANDWIDTH:
