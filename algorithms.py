@@ -154,11 +154,11 @@ def dynamicReservoir(bw, chunkid, X, reservoir, CHUNKSIZE, bitrate, candidateBit
     return reservoir
   bufAdded = 0
   timeAccumulated = 0.0
-  while ((sizeDict[bitrate][chunkid] / 1000.0) * CHUNKSIZE) / float(bw) + timeAccumulated < X:
-    chunkid += 1
+  while chunkid < len(sizeDict[bitrate]) and ((sizeDict[bitrate][chunkid] / 1000.0) * CHUNKSIZE) / float(bw) + timeAccumulated < X:
     timeAccumulated += ((sizeDict[bitrate][chunkid] / 1000.0) * CHUNKSIZE) / float(bw)
 #    print timeAccumulated
     bufAdded += CHUNKSIZE
+    chunkid += 1
   #print "bufAdded: " + str(bufAdded) + " X: " + str(X)
   ret = max(X - bufAdded, 2)
   #print "bufAdded: " + str(bufAdded) + " X: " + str(X) + " ret: " + str(ret)

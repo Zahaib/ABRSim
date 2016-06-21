@@ -45,16 +45,21 @@ optimal_rebuf = 0
 optimal_domBR = 0
 AVG_SESSION_BITRATE = 0
 upr_end = 0
+A_end = 0
 allPerf = collections.OrderedDict()
 if BUFFERLEN_UTILITY == False:
   upr_end = 0.271
 else:
   upr_end = 1.0
+if BUFFERLEN_BBA2_UTILITY == True:
+  A_end = 0.02
+else:
+  A_end = 1.01
 # for name1, group1 in sessionwise:
 for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  for A in np.arange(0.01,1.01,0.01):
+  for A in np.arange(0.01,A_end,0.01):
   # comment the line below if running for Hybrid ABR
   #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
