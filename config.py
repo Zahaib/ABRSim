@@ -12,7 +12,7 @@ DATABRICKS_MODE = False
 TRACE_MODE = True
 
 ### BB ABR configuration
-conf = {'maxbuflen':120, 'r': 5, 'maxRPct':0.45}
+conf = {'maxbuflen':120, 'r': 5, 'maxRPct':0.90, 'xLookahead':50}
 
 ### Player properties ###
 MAX_BUFFLEN = 120
@@ -20,9 +20,10 @@ LOCK = 15
 
 
 ### ABR configuration ###
-UTILITY_BITRATE_SELECTION = True
+UTILITY_BITRATE_SELECTION = False
 BANDWIDTH_UTILITY = False
 BUFFERLEN_UTILITY = False
+BUFFERLEN_BBA2_UTILITY = True
 WEIGHTED_BANDWIDTH = False
 
 ### DYNAMIC settings

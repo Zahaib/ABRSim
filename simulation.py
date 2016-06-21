@@ -52,6 +52,7 @@ else:
   upr_end = 1.0
 # for name1, group1 in sessionwise:
 for upr in np.arange(0.27, upr_end, 0.01):
+  #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
   for A in np.arange(0.01,1.01,0.01):
   # comment the line below if running for Hybrid ABR
@@ -178,10 +179,8 @@ for upr in np.arange(0.27, upr_end, 0.01):
       # then take care of the conditional events #########################################################################################################
       
       BSM = A
-      conf['r'] = A
-      conf['maxRPct'] = upr
-      #print conf['r']    
-      #print A
+      #conf['r'] = A
+      #conf['maxRPct'] = upr
       # get Dynamic BSM
       if DYNAMIC_BSM:
 	BSM = getDynamicBSM(nSamples, hbCount, BSM)
@@ -191,7 +190,11 @@ for upr in np.arange(0.27, upr_end, 0.01):
 	if UTILITY_BITRATE_SELECTION:
 	  newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM)
 	elif BUFFERLEN_UTILITY:
+          conf['r'] = A
+          conf['maxRPct'] = upr
 	  newBR = getBitrateBBA0(BLEN, candidateBR, conf)
+        elif BUFFERLEN_BBA2_UTILITY:
+          newBR = getBitrateBBA2(BLEN, candidateBR, conf, CHUNKS_DOWNLOADED, CHUNKSIZE, BR, BW)
 	elif BANDWIDTH_UTILITY:
 	  newBR = getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
 	elif WEIGHTED_BANDWIDTH:

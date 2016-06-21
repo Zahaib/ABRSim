@@ -103,6 +103,67 @@ def getBitrateBBA0(bufferlen, candidateBitRate, conf):
       return candidateBitRate[idx-1]
 
 
+
+# function returns the bitrate decision given the bufferlen using BBA2 in T.Y paper.
+def getBitrateBBA2(bufferlen, candidateBitRate, conf, chunkid, CHUNKSIZE, bitrate, bandwidth):
+  maxbuflen = conf['maxbuflen']
+  reservoir = conf['r']
+  maxRPct = conf['maxRPct']
+  X = conf['xLookahead']
+  assert (maxbuflen > 30), "too small max player buffer length"
+  assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
+  assert (maxRPct < 1)
+  assert (bufferlen < maxbuflen), "bufferlen greater than maxbufferlen"
+
+  upperReservoir = int(maxbuflen * maxRPct)
+
+  R_min = candidateBitRate[0]
+  R_max = candidateBitRate[-1]
+  # get the dynamic value of the reservoir
+  reservoir = dynamicReservoir(bandwidth, chunkid, X, reservoir, CHUNKSIZE, bitrate, candidateBitRate)
+  #print conf['r'], reservoir
+  # if bufferlen is small, return R_min
+  if (bufferlen <=reservoir):
+    return R_min
+  # if bufferlen is close to full, return R_max
+  if (bufferlen >=upperReservoir):
+    return R_max
+
+  # linear interpolation of the bufferlen vs bit-rate
+  RGap = R_max - R_min
+  BGap = upperReservoir - reservoir
+
+  assert (RGap > 100), "R_max and R_min need at least 100kbps gap"
+  assert (BGap > 30), "upper reservoir and reservoir need at least 30s gap"
+
+  # based on the slope calc. ideal bit-rate
+  RIdeal = R_min + int((bufferlen - reservoir) * RGap * 1.0 / (BGap*1.0))
+
+  #print "RGap = %d, BGap=%d, RIdeal=%d" % (RGap, BGap, RIdeal)
+
+  # find the max rate that is lower than then ideal one.
+  for idx in range(len(candidateBitRate)):
+    if RIdeal < sizeDict[candidateBitRate[idx]][chunkid]:
+      return candidateBitRate[idx-1]
+
+
+# function returns the dynamic value of the reservoir
+def dynamicReservoir(bw, chunkid, X, reservoir, CHUNKSIZE, bitrate, candidateBitRate):
+  #print chunkid
+  if chunkid > len(sizeDict[candidateBitRate[0]]) - X / CHUNKSIZE:
+    return reservoir
+  bufAdded = 0
+  timeAccumulated = 0.0
+  while ((sizeDict[bitrate][chunkid] / 1000.0) * CHUNKSIZE) / float(bw) + timeAccumulated < X:
+    chunkid += 1
+    timeAccumulated += ((sizeDict[bitrate][chunkid] / 1000.0) * CHUNKSIZE) / float(bw)
+#    print timeAccumulated
+    bufAdded += CHUNKSIZE
+  #print "bufAdded: " + str(bufAdded) + " X: " + str(X)
+  ret = max(X - bufAdded, 2)
+  #print "bufAdded: " + str(bufAdded) + " X: " + str(X) + " ret: " + str(ret)
+  return ret
+
 # function returns the bitrate decision only on the basis of bandwidth
 def getBitrateDecisionBandwidth(bufferlen, bitrates, bandwidth):
   BANDWIDTH_SAFETY_MARGIN = 1.2
