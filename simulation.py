@@ -59,9 +59,9 @@ else:
 for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  for A in np.arange(0.01,A_end,0.01):
+  #for A in np.arange(0.01,A_end,0.01):
   # comment the line below if running for Hybrid ABR
-  #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
+  for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
       printHeader()
     bwMap = dict()
