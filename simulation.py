@@ -13,7 +13,6 @@ import collections
 # 4. check the bootstrap code and remove the assumptions (done)
 # 5. subtract last chunk's unplayed part from AVG_BITRATE 
 # 6. LOCK should be decremented by the PLAYTIME acquired in an interval rather than interval length
-
 if TRACE_MODE:
   traceFile = sys.argv[1]
 # def simulate(init, mid, singleSession): # input the pandas dataframe
@@ -59,9 +58,9 @@ else:
 for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  #for A in np.arange(0.01,A_end,0.01):
+  for A in np.arange(0.01,A_end,0.01):
   # comment the line below if running for Hybrid ABR
-  for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
+  #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
       printHeader()
     bwMap = dict()
@@ -296,7 +295,7 @@ if maxQoE == -sys.maxint:
   print "#"
 else:
   domBR, freq, totalFreq = getDominant(dominantBitrate)
-  print "QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED)
+  print traceFile + " QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED)
 #  print allPerf 
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)

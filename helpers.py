@@ -50,11 +50,15 @@ def initSysState():
   return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK
 
 def bootstrapSim(jointime, BW, BR, CHUNKSIZE):
-  BLEN = 1.25
-  CHUNKS_DOWNLOADED = 0
+  BLEN = 2.5
+  CHUNKS_DOWNLOADED = int(BLEN / CHUNKSIZE)
   CLOCK = jointime
-  chunk_residue = BLEN / CHUNKSIZE 
-  first_chunk = True
+  chunk_residue = BLEN / CHUNKSIZE % 1
+  #print chunk_residue, CHUNKS_DOWNLOADED 
+  if BLEN < CHUNKSIZE:
+    first_chunk = True
+  elif BLEN >= CHUNKSIZE:
+    first_chunk = False
   return BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk  
 
 
