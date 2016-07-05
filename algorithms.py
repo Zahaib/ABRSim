@@ -65,7 +65,7 @@ def getBitrateBBA0(bufferlen, candidateBitRate, conf):
   maxbuflen = conf['maxbuflen']
   reservoir = conf['r']
   maxRPct = conf['maxRPct']
-#  print maxbuflen, reservoir, maxRPct, int(maxbuflen * maxRPct)
+  # print maxbuflen, reservoir, maxRPct, int(maxbuflen * maxRPct)
   assert (maxbuflen > 30), "too small max player buffer length"
   assert (reservoir < maxbuflen), "initial reservoir is not smaller than max player buffer length"
   assert (maxRPct < 1)

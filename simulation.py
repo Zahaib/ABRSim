@@ -58,9 +58,9 @@ else:
 for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  for A in np.arange(0.01,A_end,0.01):
+  #for A in np.arange(0.01,A_end,0.01):
   # comment the line below if running for Hybrid ABR
-  #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
+  for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
       printHeader()
     bwMap = dict()
@@ -133,6 +133,8 @@ for upr in np.arange(0.27, upr_end, 0.05):
       if not sessionFullyDownloaded:
 	numChunks, completionTimeStamps = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray)
 	chd_thisInterval = chunk_residue + numChunks
+        if playStalled_thisInterval == interval/float(1000) and chd_thisInterval >= 1.0:
+          buffering = False
 
 	chunk_residue = chd_thisInterval - int(chd_thisInterval) 
 	if BLEN + chd_thisInterval * CHUNKSIZE >= MAX_BUFFLEN: # can't download more than the MAX_BUFFLEN
@@ -172,7 +174,7 @@ for upr in np.arange(0.27, upr_end, 0.05):
       # update the buffering time and playtime accumulated during this interval
       BUFFTIME += playStalled_thisInterval
       PLAYTIME += interval/float(1000) - playStalled_thisInterval # add float
-
+      #print "chunksdownloaded: " + str(CHUNKS_DOWNLOADED)  + " playtime: " + str(PLAYTIME) + " playstalled " + str(playStalled_thisInterval) + " chd_thisinterval " + str(chd_thisInterval)
       lastBlen = BLEN
       # update the bufferlen at the end of this interval
       if buffering:
