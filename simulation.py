@@ -55,6 +55,9 @@ if BUFFERLEN_BBA1_UTILITY == True or BUFFERLEN_BBA2_UTILITY == True:
 else:
   A_end = 1.01
 # for name1, group1 in sessionwise:
+# uncomment the line below if running for Hybrid ABR
+#for upr in range(-1000, -1500, -500):
+# comment the line below if running for Hybrid ABR
 for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
@@ -199,7 +202,8 @@ for upr in np.arange(0.27, upr_end, 0.05):
       oldBR = BR
       if not first_chunk and not sessionFullyDownloaded:
 	if UTILITY_BITRATE_SELECTION:
-	  newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM)
+          buffering_weight = upr
+	  newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM, buffering_weight)
 	elif BUFFERLEN_UTILITY:
           conf['r'] = A
           conf['maxRPct'] = upr
@@ -244,6 +248,8 @@ for upr in np.arange(0.27, upr_end, 0.05):
     if DEBUG:
       printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
 
+    if BLEN > 0:
+      PLAYTIME += BLEN
     # if sessions has bad bandwidth info, just omit it
     #if 0.01 in usedBWArray:
     #  continue
@@ -283,8 +289,8 @@ for upr in np.arange(0.27, upr_end, 0.05):
 
     allPerf[str(upr) + " " + str(A)] = str(AVG_SESSION_BITRATE) + " " + str(REBUF_RATIO)
     # if new QoE is 10% greater than the previous max, then update it
-    if maxQoE + abs(0.1 * maxQoE) < QoE:
-    #if maxQoE < QoE:
+    #if maxQoE + abs(0.1 * maxQoE) < QoE:
+    if maxQoE < QoE:
       maxQoE = QoE
       optimal_A = A
       optimal_bitrate = AVG_SESSION_BITRATE

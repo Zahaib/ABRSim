@@ -6,10 +6,10 @@ from config import *
 
 # utility function:
   # pick the highest bitrate that will not introduce buffering
-def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN):
+def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN, buffering_weight):
   if BUFFER_SAFETY_MARGIN == -1:
     BUFFER_SAFETY_MARGIN = 0.25
-  BUFFERING_WEIGHT = -1000
+  BUFFERING_WEIGHT = buffering_weight
   BITRATE_WEIGHT = 1
   BANDWIDTH_SAFETY_MARGIN = 1 # 0.90
   ret = -1;
