@@ -56,14 +56,14 @@ else:
   A_end = 1.01
 # for name1, group1 in sessionwise:
 # uncomment the line below if running for Hybrid ABR
-#for upr in range(-1000, -1500, -500):
+for upr in range(-1000, -1100, -500):
 # comment the line below if running for Hybrid ABR
-for upr in np.arange(0.27, upr_end, 0.05):
+#for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  #for A in np.arange(0.01,A_end,0.01):
+  for A in np.arange(0.25,0.251,0.01):
   # comment the line below if running for Hybrid ABR
-  for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
+  #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
       printHeader()
     bwMap = dict()
@@ -73,21 +73,20 @@ for upr in np.arange(0.27, upr_end, 0.05):
     nSamples = collections.deque(5*[0],5)
     hbCount = 0
     BSM = -1.0
+    time_residue = 0.0
     blen_decrease = False
-    BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK = initSysState()
+    BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, SIMULATION_STEP = initSysState()
     if DATABRICKS_MODE:
       group2 = group1.sort("timestampms")
       candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionState(group2)
     elif TRACE_MODE:
       candidateBR, jointime, playtimems, sessiontimems, bitrate_groundtruth, bufftimems, BR, bwArray, CHUNKSIZE, TOTAL_CHUNKS = parseSessionStateFromTrace(traceFile)    
-    
     if VALIDATION_MODE:
       bwArray = bwArray[0::2]
     if AVERAGE_BANDWIDTH_MODE:
       bwArray = validationBWMap(bwArray)
     
     avgbw, stdbw = getBWStdDev(bwArray)
-    
     if not isSane(bwArray, BR, stdbw, avgbw, sizeDict):
       continue    
 
@@ -101,23 +100,34 @@ for upr in np.arange(0.27, upr_end, 0.05):
     sessionFullyDownloaded = False
     numSwitches = 0
     dominantBitrate = dict()
+    timeSinceLastDecision = 0
+    # set the simulation interval to be the simulation step size, as defined in config.py
+    interval = SIMULATION_STEP
 
   #   BW = getInitBW(BR, CLOCK, CHUNKSIZE) # if want to calculate using the jointimems
 
     # run the clock till the sessiontime
-    while CLOCK - BLEN * 1000 < sessiontimems: 
+    while CLOCK < sessiontimems: 
       # reset variables which are specific to an interval
       playStalled_thisInterval = 0
       chd_thisInterval = 0
       blenAdded_thisInterval = 0
 
-      if DEBUG:
+      if VERBOSE_DEBUG == True or DEBUG == True and timeSinceLastDecision == 0:
 	printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
 	
       if CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 < 30000:
-	interval = INIT_HB # 2 sec
+	decision_cycle = INIT_HB
       elif CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 >= 30000:
-	interval = MID_HB # 5 sec 
+	decision_cycle = MID_HB 
+
+      # if this is the last interval we must not over-calculate it
+      if CLOCK + interval > sessiontimems:
+        interval = sessiontimems - CLOCK
+
+      # increment the time since last decision by the simulation step size
+      timeSinceLastDecision += interval
+      #print timeSinceLastDecision, decision_cycle
 
       # incrementing the clock to jump to the next step
       CLOCK += interval       
@@ -134,12 +144,13 @@ for upr in np.arange(0.27, upr_end, 0.05):
 	  buffering = False
 
       if not sessionFullyDownloaded:
-	numChunks, completionTimeStamps = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray)
-	chd_thisInterval = chunk_residue + numChunks
+	numChunks, completionTimeStamps, time_residue = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray, time_residue)
+	#print time_residue
+        chd_thisInterval = chunk_residue + numChunks
         if playStalled_thisInterval == interval/float(1000) and chd_thisInterval >= 1.0:
           buffering = False
 
-	chunk_residue = chd_thisInterval - int(chd_thisInterval) 
+	chunk_residue = chd_thisInterval - int(chd_thisInterval)
 	if BLEN + chd_thisInterval * CHUNKSIZE >= MAX_BUFFLEN: # can't download more than the MAX_BUFFLEN
 	  chd_thisInterval = int(MAX_BUFFLEN - BLEN)/CHUNKSIZE
 	  chunk_residue = 0
@@ -170,18 +181,20 @@ for upr in np.arange(0.27, upr_end, 0.05):
 	sessionFullyDownloaded = True
 
       # this condition checks if we got in buffering during this interval
-      if not buffering and BLEN >= 0 and BLEN + blenAdded_thisInterval < interval/float(1000) and not sessionFullyDownloaded: 
+      if not buffering and BLEN >= 0 and BLEN + blenAdded_thisInterval < interval/float(1000) and not sessionFullyDownloaded:
 	playStalled_thisInterval += (interval/float(1000) - BLEN - blenAdded_thisInterval) # add float
 	buffering = True
 
       # update the buffering time and playtime accumulated during this interval
       BUFFTIME += playStalled_thisInterval
       PLAYTIME += interval/float(1000) - playStalled_thisInterval # add float
-      #print "chunksdownloaded: " + str(CHUNKS_DOWNLOADED)  + " playtime: " + str(PLAYTIME) + " playstalled " + str(playStalled_thisInterval) + " chd_thisinterval " + str(chd_thisInterval)
       lastBlen = BLEN
+
       # update the bufferlen at the end of this interval
       if buffering:
 	BLEN = 0
+      elif not buffering and first_chunk and CHUNKS_DOWNLOADED == 0:
+        BLEN = max(0, BLEN  - interval/float(1000))
       else:
 	BLEN = max(0, CHUNKS_DOWNLOADED * CHUNKSIZE - PLAYTIME) # else update the bufferlen to take into account the current time step
 
@@ -200,7 +213,8 @@ for upr in np.arange(0.27, upr_end, 0.05):
 	BSM = getDynamicBSM(nSamples, hbCount, BSM)
       # get the bitrate decision for the next interval
       oldBR = BR
-      if not first_chunk and not sessionFullyDownloaded:
+      if not first_chunk and not sessionFullyDownloaded and timeSinceLastDecision == decision_cycle:
+        #print "makeing decision at: " + str(CLOCK)
 	if UTILITY_BITRATE_SELECTION:
           buffering_weight = upr
 	  newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM, buffering_weight)
@@ -221,6 +235,9 @@ for upr in np.arange(0.27, upr_end, 0.05):
       else:
 	newBR = BR
 
+      # reset timeSinceLastDecision
+      if timeSinceLastDecision == decision_cycle:
+        timeSinceLastDecision = 0
       # make the switch if switching up and no switch lock is active or switching down
       if (newBR > BR and SWITCH_LOCK <= 0) or newBR < BR:
 	# activate switch lock if we have switched down      
@@ -231,7 +248,7 @@ for upr in np.arange(0.27, upr_end, 0.05):
 	chunk_residue = 0         
 	
       # count number of switches
-      if not sessionFullyDownloaded and oldBR != BR:
+      if not first_chunk and not sessionFullyDownloaded and oldBR != BR:
 	numSwitches += 1
 
       nSamples.append(BW)
@@ -303,7 +320,8 @@ if maxQoE == -sys.maxint:
   print "#"
 else:
   domBR, freq, totalFreq = getDominant(dominantBitrate)
-  print traceFile + " QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED)
+  print traceFile + " QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) + " dominant bitrate: " + str(dominantBitrate) 
+#+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED)
 #  print allPerf 
 #   print "Total Session: " + str(NUM_SESSIONS)
 #   print "Total debugP: " + str(debugcountP)

@@ -3,15 +3,15 @@
 from helpers import *
 from chunkMap import *
 from config import *
-
+import math
 # utility function:
-  # pick the highest bitrate that will not introduce buffering
+# pick the highest bitrate that will not introduce buffering
 def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN, buffering_weight):
   if BUFFER_SAFETY_MARGIN == -1:
-    BUFFER_SAFETY_MARGIN = 0.25
+    BUFFER_SAFETY_MARGIN = 0.275
   BUFFERING_WEIGHT = buffering_weight
   BITRATE_WEIGHT = 1
-  BANDWIDTH_SAFETY_MARGIN = 1 # 0.90
+  BANDWIDTH_SAFETY_MARGIN = 0.9 # 0.90
   ret = -1;
   candidateBitrates = sorted(candidateBitrates)
   estBufferingTime = 0
@@ -31,12 +31,21 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
     if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT:
       ret = br
       utility = estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT
-#     if max(actualbitrate * CHUNKSIZE/bandwidth - bufferlen * BUFFER_SAFETY_MARGIN, 0) == 0: ret = br
   # extremely bad bandwidth case
   if ret == -1:
     ret = candidateBitrates[0]
   return ret
 
+def isWithinBandwidth(br, bw):
+  exp = 4.17989 * math.pow(10, -22) * math.pow(br, 6) - 1.19444* math.pow(10,-17) * math.pow(br, 5) + 1.25648 * math.pow(10, -13) * math.pow(br, 4) - 6.28056 * math.pow(10, -10) * math.pow(br, 3) + 1.57631 * math.pow(10, -6) * math.pow(br, 2) - 0.00185333 * br + 1.73095  
+  if math.pow(br, exp) < bw:
+    return True
+  return False
+
+#http://www.wolframalpha.com/input/?i=interpolate+%5B(1000,+0.94),+(2000,+0.96),+(3000,+0.98),+(4000,+0.98),+(5000,+1.05),+(5500,1.13),+(6000,+1.16)
+
+#iteration7
+#  exp = 4.17989 * math.pow(10, -22) * math.pow(br, 6) - 1.19444* math.pow(10,-17) * math.pow(br, 5) + 1.25648 * math.pow(10, -13) * math.pow(br, 4) - 6.28056 * math.pow(10, -10) * math.pow(br, 3) + 1.57631 * math.pow(10, -6) * math.pow(br, 2) - 0.00185333 * br + 1.73095
 
 # function returns the bitrate decision given the bufferlen and bandwidth at the heartbeat interval
 def getUtilityBitrateDecisionBasic(bufferlen, bitrates, bandwidth, chunkid, CHUNKSIZE):

@@ -3,6 +3,7 @@ import numpy as np
 import random, sys
 from config import *
 from chunkMap import *
+
 # function returns the most dominant bitrate played, if two are dominant it returns the bigger of two
 def getDominant(dominantBitrate):
   ret = 0
@@ -11,11 +12,10 @@ def getDominant(dominantBitrate):
     if maxFreq <= dominantBitrate[b]:
       ret = b
       maxFreq = dominantBitrate[b]
-  #print dominantBitrate.items()
   return ret, maxFreq, sum(dominantBitrate.values())
 
 
-# function return the initial bandwidth using the jointime of the session
+# function returns the initial bandwidth using the jointime of the session
 def printPercentile(target):
   for i in range (0,101):
     print str(i/float(100)) + "\t" + str(np.percentile(target, i))
@@ -35,6 +35,7 @@ def printHeader():
 def printStats(CANONICAL_TIME, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME):
   print str(CANONICAL_TIME) + "\t" + str(BW) + "\t" + str(BLEN) + "\t" + str(oldBR) + "\t" + str(BR) + "\t" + str(CHUNKS_DOWNLOADED) + "\t" + str(BUFFTIME) + "\t" + str(PLAYTIME)
 
+# function initializes the state variables
 def initSysState():
   BLEN = 0
   CHUNKS_DOWNLOADED = 0
@@ -47,10 +48,11 @@ def initSysState():
   BW = 0
   AVG_SESSION_BITRATE = 0
   SWITCH_LOCK = 0
-  return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK
+  return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, SIMULATION_STEP
 
+# function bootstraps the simulation, some of the functionality is same as the initSysState, check duplication
 def bootstrapSim(jointime, BW, BR, CHUNKSIZE):
-  BLEN = 2.5
+  BLEN = 1.0
   CHUNKS_DOWNLOADED = int(BLEN / CHUNKSIZE)
   CLOCK = jointime
   chunk_residue = BLEN / CHUNKSIZE % 1
@@ -61,7 +63,7 @@ def bootstrapSim(jointime, BW, BR, CHUNKSIZE):
     first_chunk = False
   return BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk  
 
-
+# just a bunch of sanity checks to ensure input is right
 def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
   sanity = True
   if any(bw[1] < 0 for bw in bwArray):
@@ -94,6 +96,7 @@ def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
 
   return sanity      
 
+# function generates the final stats
 def generateStats(AVG_SESSION_BITRATE, BUFFTIME, PLAYTIME, bufftimems, playtimems):
   AVG_SESSION_BITRATE = (AVG_SESSION_BITRATE/float(PLAYTIME)) # add float
   REBUF_RATIO = round(BUFFTIME/float(BUFFTIME + PLAYTIME),3)
@@ -111,7 +114,7 @@ def insertJoinTimeandInitBW(ts, bw, bwArray):
   bwArray = row + bwArray
   return bwArray
 
-# getStall Implementation
+# function returns the amount of time spent in rebuffering
 def getStall(ch_d, completionTimeStamps, bufferlen, intervalStart, interval, CHUNKSIZE):
   if ch_d != len(completionTimeStamps):
     return False,0
@@ -146,39 +149,46 @@ def timeToDownloadSingleChunk(CHUNKSIZE, bitrate, BW, chunk_residue, chunkid):
   return round((bitrate * CHUNKSIZE - bitrate * CHUNKSIZE * chunk_residue)/float(BW),2)
 
 
-# function returns the number of chunks downloaded during the heartbeat interval  
-# def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZE, chunk_residue):
-#   if CHUNK_AWARE_MODE and bitrate in sizeDict and chunkid in sizeDict[bitrate]:
-#     bitrate = sizeDict[bitrate][chunkid] * 8/(CHUNKSIZE * 1000)
-#   return round(bandwidth/(float(bitrate) * CHUNKSIZE) * (time_curr - time_prev)/float(1000), 2)
-
 # function returns the number of chunks downloaded during the heartbeat interval and uses delay
-def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZE, chunk_residue, usedBWArray, bwArray):
+def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZE, chunk_residue, usedBWArray, bwArray, time_residue):
   chunkCount = 0.0
+  time_residue_thisInterval = 0.0
   completionTimeStamps = []
   bitrateAtIntervalStart = bitrate
+  if bandwidth == 0.0:
+    return chunkCount, completionTimeStamps, time_residue_thisInterval
+
   if CHUNK_AWARE_MODE:
     bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
 
   time2FinishResidueChunk = (((1 - chunk_residue) * bitrate * CHUNKSIZE)/float(bandwidth)) * 1000
   time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
+  # first add the residue time from the previous interval
+  #time_prev += time_residue
   # if there is a residue chunk from the last interval, then handle it first
   if chunk_residue > 0 and time_prev + time2FinishResidueChunk < time_curr:
     chunkCount +=  1 - chunk_residue
     completionTimeStamps.append(time_prev + time2FinishResidueChunk)
-    time_prev += time2FinishResidueChunk + getRandomDelay()
+    time_prev += time2FinishResidueChunk + getRandomDelay(bitrate)
     # residue chunk is complete so now move to next chunkid and get the actual bitrate of the next chunk
     if CHUNK_AWARE_MODE:
       bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
     bandwidth = max(interpolateBWInterval(time_prev, usedBWArray, bwArray),0.01)
     chunkid += 1
     time2DownloadFullChunk = (bitrate * CHUNKSIZE/float(bandwidth)) * 1000
-    
+  # the case where we still have some time to download the residue chunk but not finish it completely
+  #elif chunk_residue > 0 and time_prev + time2FinishResidueChunk >= time_curr and time_prev < time_curr:
+  #  chunkCount += round(bandwidth/(float(bitrate) * CHUNKSIZE) * (time_curr - time_prev)/float(1000), 2)
+    #if chunkCount + chunk_residue == 1:
+    #  completionTimeStamps.append(time_prev)
+    #print time_prev, time_curr, time2FinishResidueChunk, chunkCount, chunk_residue
+  #  return chunkCount, completionTimeStamps, 0.0
+     
   # loop untill chunks can be downloaded in the interval, after each download add random delay
   while time_prev + time2DownloadFullChunk < time_curr:
     chunkCount += 1
     completionTimeStamps.append(time_prev + time2DownloadFullChunk)
-    time_prev += time2DownloadFullChunk + getRandomDelay()
+    time_prev += time2DownloadFullChunk + getRandomDelay(bitrate)
     if CHUNK_AWARE_MODE:
       bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
     # print time_prev, usedBWArray        
@@ -188,13 +198,25 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
   # if there is still some time left, download the partial chunk  
   if time_prev < time_curr:
     chunkCount += round(bandwidth/(float(bitrate) * CHUNKSIZE) * (time_curr - time_prev)/float(1000), 2)
-  return chunkCount, completionTimeStamps
+  # if the delay was enough to make time_prev greater than time_curr then we need to transfer over the remaining delay to next interval
+  if time_prev >= time_curr:
+    time_residue_thisInterval = time_prev - time_curr
+  return chunkCount, completionTimeStamps, time_residue_thisInterval
 
 
 # function returns a random delay value to mimic the delay between start and end chunks
-def getRandomDelay():
-#   return 0
-  return random.randint(150, 250)
+def getRandomDelay(bitrate):
+  return random.randint(150,250)
+  #return 0
+  max_delay = 4000
+  min_delay = 20
+  max_bitrate = 6000
+  mid =  int((max_delay - min_delay) * bitrate / float(max_bitrate) + min_delay)
+  randmin = max(mid - 750, min_delay)
+  randmax = min(mid + 750, max_delay)
+  randval = random.randint(randmin, randmax)
+  #print randmin, randmax, bitrate, randval
+  return randval
 
 # function returns the actual bitrate of the label bitrate and the specific chunk
 def getRealBitrate(bitrate, chunkid, CHUNKSIZE):
@@ -223,22 +245,25 @@ def parseSessionState(group):
 # function intializes session state
 def parseSessionStateFromTrace(filename):
   ts, bw = [], []
-  ls = open(filename).readlines()
-  for l in ls:
-    if l in ['\n', '\r\n']:
-      continue
-    ts.append(float(l.split(" ")[0]))
-    bw.append(float(l.split(" ")[1]))
-  
+  try:  
+    ls = open(filename).readlines()
+    for l in ls:
+      if l in ['\n', '\r\n']:
+	continue
+      ts.append(float(l.split(" ")[0]))
+      bw.append(float(l.split(" ")[1]))
+  except IOError:
+    print "Incorrect filepath: " + str(filename) + " no such file found..."
+    sys.exit()
+
   bitrates = [1002, 1434, 2738, 3585, 4661, 5885] # candidate bitrates are in kbps, you can change these to suite your values
-  #bitrates  = range(150,2150,400)
 
   # now write the code to read the trace file, following is a sample ts and bw array
   #ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
   #bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
   totalTraceTime = ts[-1] # read this value as the last time stamp in the file
   chunkDuration = 5
-  jointimems = 500
+  jointimems = 0
 
   return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, bitrates[0], zip(ts,bw), chunkDuration, sys.maxint #10 , 75 # 
 
