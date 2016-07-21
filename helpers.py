@@ -42,8 +42,8 @@ def initSysState():
   BUFFTIME = 0
   PLAYTIME = 0
   CANONICAL_TIME = 0
-  INIT_HB = 500
-  MID_HB = 500
+  INIT_HB = 2000
+  MID_HB = 2000
   BR = 0
   BW = 0
   AVG_SESSION_BITRATE = 0
@@ -169,7 +169,7 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
   if chunk_residue > 0 and time_prev + time2FinishResidueChunk < time_curr:
     chunkCount +=  1 - chunk_residue
     completionTimeStamps.append(time_prev + time2FinishResidueChunk)
-    time_prev += time2FinishResidueChunk + getRandomDelay(bitrate)
+    time_prev += time2FinishResidueChunk + getRandomDelay(bitrate, chunkid, CHUNKSIZE)
     # residue chunk is complete so now move to next chunkid and get the actual bitrate of the next chunk
     if CHUNK_AWARE_MODE:
       bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
@@ -188,7 +188,7 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
   while time_prev + time2DownloadFullChunk < time_curr:
     chunkCount += 1
     completionTimeStamps.append(time_prev + time2DownloadFullChunk)
-    time_prev += time2DownloadFullChunk + getRandomDelay(bitrate)
+    time_prev += time2DownloadFullChunk + getRandomDelay(bitrate, chunkid, CHUNKSIZE)
     if CHUNK_AWARE_MODE:
       bitrate = getRealBitrate(bitrateAtIntervalStart, chunkid, CHUNKSIZE)
     # print time_prev, usedBWArray        
@@ -205,24 +205,34 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
 
 
 # function returns a random delay value to mimic the delay between start and end chunks
-def getRandomDelay(bitrate):
-  return random.randint(150,250)
+def getRandomDelay(bitrate, chunkid, CHUNKSIZE):
+  bitrate = getChunkSizeBits(bitrate, chunkid, CHUNKSIZE)
+  twentyfive = 0.0003 * bitrate - 239.42
+  seventyfive = 0.0009 * bitrate - 107.71
+  return random.randint(int(twentyfive), int(seventyfive))
   #return 0
-  max_delay = 4000
-  min_delay = 20
-  max_bitrate = 6000
-  mid =  int((max_delay - min_delay) * bitrate / float(max_bitrate) + min_delay)
-  randmin = max(mid - 750, min_delay)
-  randmax = min(mid + 750, max_delay)
-  randval = random.randint(randmin, randmax)
+  #max_delay = 4000
+  #min_delay = 20
+  #max_bitrate = 6000
+  #mid =  int((max_delay - min_delay) * bitrate / float(max_bitrate) + min_delay)
+  #randmin = max(mid - 750, min_delay)
+  #randmax = min(mid + 750, max_delay)
+  #randval = random.randint(randmin, randmax)
   #print randmin, randmax, bitrate, randval
-  return randval
+  #return randval
 
 # function returns the actual bitrate of the label bitrate and the specific chunk
 def getRealBitrate(bitrate, chunkid, CHUNKSIZE):
   ret = bitrate
   if CHUNK_AWARE_MODE and bitrate in sizeDict and chunkid in sizeDict[bitrate]:
     ret = sizeDict[bitrate][chunkid] * 8/float(CHUNKSIZE * 1000)
+  return ret
+
+# function return the actual size of a chunk in bits
+def getChunkSizeBits(bitrate, chunkid, CHUNKSIZE):
+  ret = bitrate * CHUNKSIZE * 1000
+  if CHUNK_AWARE_MODE and bitrate in sizeDict and chunkid in sizeDict[bitrate]:
+    ret = sizeDict[bitrate][chunkid] * 8
   return ret
   
 # return the average and standard deviation of the session bandwidth

@@ -54,14 +54,17 @@ if BUFFERLEN_BBA1_UTILITY == True or BUFFERLEN_BBA2_UTILITY == True:
   A_end = 0.02
 else:
   A_end = 1.01
+
+utilities = [-500,-1000,-2000,-3000,-4000,-5000,-6000,-7000,-8000,-9000,-10000]
 # for name1, group1 in sessionwise:
 # uncomment the line below if running for Hybrid ABR
-for upr in range(-1000, -1100, -500):
+for upr in range(0, 1, 1):
+  upr = utilities[upr]
 # comment the line below if running for Hybrid ABR
 #for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  for A in np.arange(0.25,0.251,0.01):
+  for A in np.arange(0.01,1.01,0.05):
   # comment the line below if running for Hybrid ABR
   #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
@@ -73,7 +76,7 @@ for upr in range(-1000, -1100, -500):
     nSamples = collections.deque(5*[0],5)
     hbCount = 0
     BSM = -1.0
-    time_residue = 0.0
+    chunk_sched_time_delay = 0.0
     blen_decrease = False
     BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CLOCK, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, SIMULATION_STEP = initSysState()
     if DATABRICKS_MODE:
@@ -125,6 +128,9 @@ for upr in range(-1000, -1100, -500):
       if CLOCK + interval > sessiontimems:
         interval = sessiontimems - CLOCK
 
+      # decrement the interval from the chunk scheduling delay
+      chunk_sched_time_delay = max(0, chunk_sched_time_delay - interval)
+      
       # increment the time since last decision by the simulation step size
       timeSinceLastDecision += interval
       #print timeSinceLastDecision, decision_cycle
@@ -143,10 +149,13 @@ for upr in range(-1000, -1100, -500):
 	if playStalled_thisInterval < interval/float(1000): # chunk download so resume
 	  buffering = False
 
-      if not sessionFullyDownloaded:
-	numChunks, completionTimeStamps, time_residue = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray, time_residue)
-	#print time_residue
+      if not sessionFullyDownloaded and chunk_sched_time_delay < interval:
+	numChunks, completionTimeStamps, chunk_sched_time_delay = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray, chunk_sched_time_delay)
         chd_thisInterval = chunk_residue + numChunks
+        # if a chunk was completed then need to add delay
+        if int(chd_thisInterval) >= 1 and chunk_sched_time_delay < interval:
+          chunk_sched_time_delay = getRandomDelay(BR, CHUNKS_DOWNLOADED, CHUNKSIZE)
+
         if playStalled_thisInterval == interval/float(1000) and chd_thisInterval >= 1.0:
           buffering = False
 
@@ -320,7 +329,7 @@ if maxQoE == -sys.maxint:
   print "#"
 else:
   domBR, freq, totalFreq = getDominant(dominantBitrate)
-  print traceFile + " QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) + " dominant bitrate: " + str(dominantBitrate) 
+  print traceFile + " QoE: " + str(maxQoE) + " avg. bitrate: " + str(optimal_bitrate) +  " buf. ratio: " + str(optimal_rebuf) + " optimal A: " + str(optimal_A) + " mapping: " + str(allPerf) # + " dominant bitrate: " + str(dominantBitrate) 
 #+ " numSwitches: " + str(numSwitches) + " dominant BR: " + str(domBR) + " played " + str(freq) + " out of " + str(totalFreq) + " optimal A: " + str(optimal_A) + " PLAYTIME: " + str(PLAYTIME) + " BUFFTIME: " + str(BUFFTIME) +  " CHUNKS: " + str(CHUNKS_DOWNLOADED)
 #  print allPerf 
 #   print "Total Session: " + str(NUM_SESSIONS)

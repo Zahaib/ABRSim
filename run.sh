@@ -20,7 +20,25 @@
 #sed -i 's/QoE: //g; s/ avg. bitrate://g; s/ buf. ratio://g; s/ optimal A://g' hyb-group2-res.txt
 #sed -i 's/QoE: //g; s/ avg. bitrate://g; s/ buf. ratio://g; s/ optimal A://g' hyb-group3-res.txt
 
-path="../../results/convivaData/simulationComparison/atleast2min_group"
-for i in `seq 1 6484`; do if [ ! -f $path/$i.out ]; then continue; fi; python simulation.py $path/$i.out; done
+#path="../../results/convivaData/simulationComparison/manual_group"
+#for i in `ls $path/*.txt | sort -n`; do python simulation.py $i; done
 
+#export fn=$1
+#export k=1
+#function output () {
+#  ((k++))
+#  l=$(sed -n "${k}p" $fn)
+#    echo $l
+#}
+#
+#export -f output
+#parallel --jobs 8 output ::: 4
+  
+#function simulate() {
+#  while read line; do
+#    export line
+#    python simulation.py $line >> pub1.txt
+#  done < $1
+#}
 
+parallel -j 8 -a filelist.txt python simulation.py

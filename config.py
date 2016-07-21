@@ -1,12 +1,15 @@
-# simulation configuration
+### debug configuration
 DEBUG = False
 VERBOSE_DEBUG = False
+
+### simulation configuration
 # MEDIAN_BITRATE_MODE = True
-CHUNK_AWARE_MODE = False
+CHUNK_AWARE_MODE = True
 PS_STYLE_BANDWIDTH = False
 VALIDATION_MODE = False
 TOTAL_CHUNKS  = 0
 AVERAGE_BANDWIDTH_MODE = False
+
 ### Operation mode ###
 DATABRICKS_MODE = False
 TRACE_MODE = True
