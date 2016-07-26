@@ -58,13 +58,13 @@ else:
 utilities = [-500,-1000,-2000,-3000,-4000,-5000,-6000,-7000,-8000,-9000,-10000]
 # for name1, group1 in sessionwise:
 # uncomment the line below if running for Hybrid ABR
-for upr in range(0, 1, 1):
+for upr in range(1, 2, 1):
   upr = utilities[upr]
 # comment the line below if running for Hybrid ABR
 #for upr in np.arange(0.27, upr_end, 0.05):
   #allPerf = collections.OrderedDict()
   # uncomment the line below if running for Hybrid ABR
-  for A in np.arange(0.01,1.01,0.05):
+  for A in np.arange(0.25,0.251,0.01):
   # comment the line below if running for Hybrid ABR
   #for A in np.arange(1,int(upr * conf['maxbuflen']) - 31,1):
     if DEBUG:
@@ -97,7 +97,7 @@ for upr in range(0, 1, 1):
     if(jointime < bwArray[0][0]):
       bwArray = insertJoinTimeandInitBW(jointime, BW, bwArray)
 
-    BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk = bootstrapSim(jointime, BW, BR, CHUNKSIZE)
+    BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk, sessionHistory  = bootstrapSim(jointime,  BW, BR, CHUNKSIZE)
     oldBR = BR  
     buffering = False
     sessionFullyDownloaded = False
@@ -117,9 +117,9 @@ for upr in range(0, 1, 1):
       blenAdded_thisInterval = 0
 
       if VERBOSE_DEBUG == True or DEBUG == True and timeSinceLastDecision == 0:
-	printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
+	printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, chunk_residue)
 	
-      if CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 < 30000:
+      if CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 < 30000 or CLOCK < 30000:
 	decision_cycle = INIT_HB
       elif CHUNKS_DOWNLOADED * CHUNKSIZE * 1000 >= 30000:
 	decision_cycle = MID_HB 
@@ -150,11 +150,11 @@ for upr in range(0, 1, 1):
 	  buffering = False
 
       if not sessionFullyDownloaded and chunk_sched_time_delay < interval:
-	numChunks, completionTimeStamps, chunk_sched_time_delay = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray, chunk_sched_time_delay)
+	numChunks, completionTimeStamps, chunk_sched_time_delay = chunksDownloaded(CLOCK - interval, CLOCK, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, chunk_residue, usedBWArray,bwArray, chunk_sched_time_delay, BLEN)
         chd_thisInterval = chunk_residue + numChunks
         # if a chunk was completed then need to add delay
         if int(chd_thisInterval) >= 1 and chunk_sched_time_delay < interval:
-          chunk_sched_time_delay = getRandomDelay(BR, CHUNKS_DOWNLOADED, CHUNKSIZE)
+          chunk_sched_time_delay = getRandomDelay(BR, CHUNKS_DOWNLOADED, CHUNKSIZE, BLEN)
 
         if playStalled_thisInterval == interval/float(1000) and chd_thisInterval >= 1.0:
           buffering = False
@@ -164,10 +164,17 @@ for upr in range(0, 1, 1):
 	  chd_thisInterval = int(MAX_BUFFLEN - BLEN)/CHUNKSIZE
 	  chunk_residue = 0
       
+      # can we finish the download of the chunk before buffer drains
+      timeRem = timeRemainingFinishChunk(chunk_residue, BR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE)
+
       # can't download more chunks than the total playtime of the session.
       if CHUNKS_DOWNLOADED + int(chd_thisInterval) >=  math.ceil((playtimems)/float(CHUNKSIZE * 1000)):
 	chd_thisInterval = math.ceil((playtimems)/float(CHUNKSIZE * 1000)) - CHUNKS_DOWNLOADED
 	
+      # append the information to session history if a chunk just finished to downloaded
+      if int(chd_thisInterval) == 1:
+        sessionHistory = updateSessionHistory(BR, CLOCK, CHUNKS_DOWNLOADED, CHUNKSIZE, sessionHistory, first_chunk, chunk_sched_time_delay)
+      
       # only append fully downloaded chunks                       
       CHUNKS_DOWNLOADED += int(chd_thisInterval)
       
@@ -213,7 +220,6 @@ for upr in range(0, 1, 1):
       ####################################################################################################################################################
 
       # then take care of the conditional events #########################################################################################################
-      
       BSM = A
       #conf['r'] = A
       #conf['maxRPct'] = upr
@@ -226,7 +232,7 @@ for upr in range(0, 1, 1):
         #print "makeing decision at: " + str(CLOCK)
 	if UTILITY_BITRATE_SELECTION:
           buffering_weight = upr
-	  newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM, buffering_weight)
+	  newBR = getUtilityBitrateDecision(BLEN, candidateBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE, BSM, buffering_weight, sessionHistory)
 	elif BUFFERLEN_UTILITY:
           conf['r'] = A
           conf['maxRPct'] = upr
@@ -248,12 +254,13 @@ for upr in range(0, 1, 1):
       if timeSinceLastDecision == decision_cycle:
         timeSinceLastDecision = 0
       # make the switch if switching up and no switch lock is active or switching down
-      if (newBR > BR and SWITCH_LOCK <= 0) or newBR < BR:
+      if not first_chunk and (newBR > BR and SWITCH_LOCK <= 0 and CHUNKS_DOWNLOADED >= 2 and timeRemainingFinishChunk(0.0, newBR, BW, CHUNKS_DOWNLOADED, CHUNKSIZE) < BLEN * 1000.0) or (newBR < BR and timeRem > BLEN * 0.05 * 1000.0):
 	# activate switch lock if we have switched down      
-	if newBR < BR:
+	if newBR < BR and not SWITCH_LOCK > 0:
 	  SWITCH_LOCK = LOCK
 	BR = newBR
 	# throw away the partially downloaded chunk if a switch is recommended
+        #print oldBR, newBR, CHUNKS_DOWNLOADED, chunk_residue
 	chunk_residue = 0         
 	
       # count number of switches
@@ -272,7 +279,7 @@ for upr in range(0, 1, 1):
 
     # print status after finishing
     if DEBUG:
-      printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME)
+      printStats(CLOCK, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, chunk_residue)
 
     if BLEN > 0:
       PLAYTIME += BLEN

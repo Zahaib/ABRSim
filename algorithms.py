@@ -6,21 +6,22 @@ from config import *
 import math
 # utility function:
 # pick the highest bitrate that will not introduce buffering
-def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN, buffering_weight):
+def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN, buffering_weight, sessionHistory):
   if BUFFER_SAFETY_MARGIN == -1:
     BUFFER_SAFETY_MARGIN = 0.275
   BUFFERING_WEIGHT = buffering_weight
   BITRATE_WEIGHT = 1
-  BANDWIDTH_SAFETY_MARGIN = 0.9 # 0.90
+  BANDWIDTH_SAFETY_MARGIN = 1.5 # 0.90
   ret = -1;
   candidateBitrates = sorted(candidateBitrates)
   estBufferingTime = 0
   utility = -1000000
   actualbitrate = 0
-  bandwidth = bandwidth * BANDWIDTH_SAFETY_MARGIN
+  if ESTIMATED_BANDWIDTH_MODE:
+    est_bandwidth = estimateBandwidth(bufferlen, sessionHistory, chunkid)
+    if est_bandwidth != -1:
+      bandwidth = est_bandwidth
   for br in candidateBitrates:
-#     if bandwidth < br * BANDWIDTH_SAFETY_MARGIN:
-#       continue
 # the buffer len you will add: sum of buffer you will download plus current buffer. If current buffer is zero then the
 # amount you will add is a function of bandwidth alone. If the bandwidth is zero, then the buffer you have is just the
 # current value of the buffer.
@@ -28,7 +29,7 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
     if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid, CHUNKSIZE) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
     bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE
     estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
-    if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT:
+    if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT: # and br * BANDWIDTH_SAFETY_MARGIN < bandwidth:
       ret = br
       utility = estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT
   # extremely bad bandwidth case
@@ -36,6 +37,31 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
     ret = candidateBitrates[0]
   return ret
 
+# function estimates the bandwidth given the bufferlen and the previous chunks which have been downloaded
+def estimateBandwidth(bufferlen, sessionHistory, chunkid):
+  ret = -1
+  if chunkid == 0:
+    return ret
+  elif chunkid == 1:
+    return calcBandwidth(sessionHistory, 0)
+  
+  if bufferlen >= 10.0:
+    ret = calcBandwidth(sessionHistory, chunkid - 1)
+  else:
+    bw1 = calcBandwidth(sessionHistory, chunkid - 1)
+    bw2 = calcBandwidth(sessionHistory, chunkid - 2)
+    ret = min(bw1, bw2)
+  return ret
+
+# function to calculate the bandwidth given the chunkid and sessionHistory
+def calcBandwidth(sessionHistory, chunkid):
+  chunk_start = sessionHistory[chunkid][0]
+  chunk_end = sessionHistory[chunkid][1]
+  kilobits = sessionHistory[chunkid][2]
+  ret = kilobits / ((chunk_end - chunk_start) / 1000.0)
+  return ret
+
+# a mathematical function shaping the behaviour of the ABR
 def isWithinBandwidth(br, bw):
   exp = 4.17989 * math.pow(10, -22) * math.pow(br, 6) - 1.19444* math.pow(10,-17) * math.pow(br, 5) + 1.25648 * math.pow(10, -13) * math.pow(br, 4) - 6.28056 * math.pow(10, -10) * math.pow(br, 3) + 1.57631 * math.pow(10, -6) * math.pow(br, 2) - 0.00185333 * br + 1.73095  
   if math.pow(br, exp) < bw:
@@ -43,7 +69,6 @@ def isWithinBandwidth(br, bw):
   return False
 
 #http://www.wolframalpha.com/input/?i=interpolate+%5B(1000,+0.94),+(2000,+0.96),+(3000,+0.98),+(4000,+0.98),+(5000,+1.05),+(5500,1.13),+(6000,+1.16)
-
 #iteration7
 #  exp = 4.17989 * math.pow(10, -22) * math.pow(br, 6) - 1.19444* math.pow(10,-17) * math.pow(br, 5) + 1.25648 * math.pow(10, -13) * math.pow(br, 4) - 6.28056 * math.pow(10, -10) * math.pow(br, 3) + 1.57631 * math.pow(10, -6) * math.pow(br, 2) - 0.00185333 * br + 1.73095
 

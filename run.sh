@@ -41,4 +41,6 @@
 #  done < $1
 #}
 
-parallel -j 8 -a filelist.txt python simulation.py
+> pub1.txt
+parallel -j 48 -a filelist.txt python simulation.py >> pub1.txt
+sed -i 's/QoE: //g; s/ avg. bitrate://g; s/ buf. ratio://g; s/ optimal A://g' pub1.txt 
