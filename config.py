@@ -1,5 +1,5 @@
 ### debug configuration
-DEBUG = False
+DEBUG = True
 VERBOSE_DEBUG = False
 
 ### simulation configuration

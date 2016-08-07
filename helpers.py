@@ -26,15 +26,6 @@ def getInitBWCalculated(init_br, jointime, chunksize):
 def getInitBW(bwArray):
   return bwArray[0][1]
 
-# function prints a print header
-def printHeader():
-  print "\nSession joined..." #+ str(group2.irow(0)["clientid"]) + ", " + str(group2.irow(0)["clientsessionid"])
-  print "TIME" + "\t" + "BW" + "\t" + "BLEN" + "\t" + "OBR" + "\t" + "BR" + "\t" + "CHKS" + "\t" + "RSDU" + "\t" + "BUFF" + "\t" + "PLAY"
-
-# function prints current session status
-def printStats(CANONICAL_TIME, BW, BLEN, BR, oldBR, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, chunk_residue):
-  print str(round(CANONICAL_TIME/1000.0,2)) + "\t" + str(round(BW,2)) + "\t" + str(round(BLEN,2)) + "\t" + str(oldBR) + "\t" + str(BR) + "\t" + str(CHUNKS_DOWNLOADED) + "\t" + str(round(chunk_residue,2)) + "\t" + str(round(BUFFTIME,2)) + "\t" + str(round(PLAYTIME,2))
-
 # function initializes the state variables
 def initSysState():
   BLEN = 0
@@ -230,7 +221,7 @@ def chunksDownloaded(time_prev, time_curr, bitrate, bandwidth, chunkid, CHUNKSIZ
 
 # function returns a random delay value to mimic the delay between start and end chunks
 def getRandomDelay(bitrate, chunkid, CHUNKSIZE, BLEN):
-  #return 0
+  return 0
   bitrate = getChunkSizeBits(bitrate, chunkid, CHUNKSIZE)
   zero = 0.0
   five = 0.00002 * bitrate + 34.8
@@ -305,6 +296,29 @@ def parseSessionStateFromTrace(filename):
   jointimems = ts[0] + 1
 
   return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, init_br, zip(ts,bw), chunkDuration, sys.maxint #10 , 75 # 
+
+
+# new function to parse tracefile
+def parseTrace(tracefile):
+  ts, bw = [], []
+  init_br = 0
+  try:  
+    ls = open(tracefile).readlines()
+    for l in ls:
+      l = l.rstrip("\n")
+      if l in ['\n', '\r\n']:
+        continue
+      ts.append(float(l.split(" ")[0]))
+      bw.append(float(l.split(" ")[1]))
+  except IOError:
+    print "File not found: " + str(tracefile)
+    sys.exit()
+
+  try:
+    init_br = int(float(ls[-1].rstrip("\n").split(" ")[2]))
+  except (IndexError, ValueError):
+    init_br = -1
+  return zip(ts,bw)
 
 
 # function returns interpolated bandwidth at the time of the heartbeat

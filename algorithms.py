@@ -17,10 +17,10 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
   estBufferingTime = 0
   utility = -1000000
   actualbitrate = 0
-  if ESTIMATED_BANDWIDTH_MODE:
-    est_bandwidth = estimateBandwidth(bufferlen, sessionHistory, chunkid)
-    if est_bandwidth != -1:
-      bandwidth = est_bandwidth
+  # if ESTIMATED_BANDWIDTH_MODE:
+  #   est_bandwidth = estimateBandwidth(bufferlen, sessionHistory, chunkid)
+  #   if est_bandwidth != -1:
+  #     bandwidth = est_bandwidth
   for br in candidateBitrates:
 # the buffer len you will add: sum of buffer you will download plus current buffer. If current buffer is zero then the
 # amount you will add is a function of bandwidth alone. If the bandwidth is zero, then the buffer you have is just the
