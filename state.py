@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import config
+# import config
 import helpers, algorithms
 import math, sys
 import numpy as np

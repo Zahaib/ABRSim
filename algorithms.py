@@ -2,7 +2,7 @@
 
 from helpers import *
 from chunkMap import *
-from config import *
+from default import *
 import math
 # utility function:
 # pick the highest bitrate that will not introduce buffering

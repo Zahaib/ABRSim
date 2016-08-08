@@ -7,48 +7,48 @@ from sim import newsimulation
 # from state import globalstate, chunkstate, bitratestate, bandwidthstate, bufferstate
 import algorithms, helpers
 
-# parse user input and defaults to get the config for this simulation
+# parse user input and defaults to get the config for this sim
 config = parseinput()
 
-# create a new simulation based on the config
-simulation = newsimulation(config)
+# create a new sim based on the config
+sim = newsimulation(config)
 
 if config.debug or config.verbose:
-  simulation.printHeader()
+  sim.printHeader()
 
-while simulation.globalstate.clock < simulation.globalstate.traceSessiontime:
-  simulation.bandwidthstate.doNonConditional(config, simulation.bwArray, simulation.globalstate)  
+while sim.globalstate.clock < sim.globalstate.traceSessiontime:
+  sim.bandwidthstate.doNonConditional(config, sim.bwArray, sim.globalstate)  
 
-  if config.debug and simulation.bitratestate.timeSinceLastDecision == 0 or config.verbose:
-    simulation.printState(config, simulation.globalstate, simulation.chunkstate, simulation.bitratestate, simulation.bandwidthstate, simulation.bufferstate)
+  if config.debug and sim.bitratestate.timeSinceLastDecision == 0 or config.verbose:
+    sim.printState(config, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate)
 
   # bring all data structures up to date to the current step
-  simulation.globalstate.doNonConditional(config)
-  simulation.chunkstate.doNonConditional(config)
-  simulation.bufferstate.doNonConditional(config, simulation.sessionFullyDownloaded)
-  simulation.bitratestate.doNonConditional(config, simulation.chunkstate)
+  sim.globalstate.doNonConditional(config)
+  sim.chunkstate.doNonConditional(config)
+  sim.bufferstate.doNonConditional(config, sim.sessionFullyDownloaded)
+  sim.bitratestate.doNonConditional(config, sim.chunkstate)
 
   # handle the conditional events for relevant state data structures
-  if not simulation.sessionFullyDownloaded:
-  	simulation.chunkstate.doConditional(config, simulation.bwArray, simulation.globalstate, simulation.chunkstate, simulation.bitratestate, simulation.bandwidthstate, simulation.bufferstate)
-  	simulation.bufferstate.doConditional(config, simulation.bwArray, simulation.globalstate, simulation.chunkstate, simulation.bitratestate, simulation.bandwidthstate, simulation.bufferstate)
-  	simulation.bitratestate.doConditional(config, simulation.bwArray, simulation.globalstate, simulation.chunkstate, simulation.bitratestate, simulation.bandwidthstate, simulation.bufferstate)
+  if not sim.sessionFullyDownloaded:
+  	sim.chunkstate.doConditional(config, sim.bwArray, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate)
+  	sim.bufferstate.doConditional(config, sim.bwArray, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate)
+  	sim.bitratestate.doConditional(config, sim.bwArray, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate)
 
-  simulation.globalstate.doConditional(config, simulation.bwArray, simulation.globalstate, simulation.chunkstate, simulation.bitratestate, simulation.bandwidthstate, simulation.bufferstate, simulation.sessionFullyDownloaded)
+  sim.globalstate.doConditional(config, sim.bwArray, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate, sim.sessionFullyDownloaded)
 
   # if all the chunks in the sessions have been downloaded, mark the session complete
-  if simulation.chunkstate.chunks_downloaded >= math.ceil((simulation.globalstate.tracePlaytime)/float(config.chunksize * 1000)): 
-    simulation.sessionFullyDownloaded = True
+  if sim.chunkstate.chunks_downloaded >= math.ceil((sim.globalstate.tracePlaytime)/float(config.chunksize * 1000)): 
+    sim.sessionFullyDownloaded = True
 
 
 if config.debug or config.verbose:
-  simulation.printState(config, simulation.globalstate, simulation.chunkstate, simulation.bitratestate, simulation.bandwidthstate, simulation.bufferstate)
+  sim.printState(config, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate)
 
-if simulation.bufferstate.blen > 0:
-  simulation.globalstate.updatePlaytime(simulation.bufferstate.blen)
+if sim.bufferstate.blen > 0:
+  sim.globalstate.updatePlaytime(sim.bufferstate.blen)
 
 # generate final statistics
-avg_bitrate, rebuf_ratio, _ = helpers.generateStats(simulation.globalstate.avg_bitrate, simulation.globalstate.bufftime, \
-	simulation.globalstate.playtime, 1.0, simulation.globalstate.tracePlaytime)
+avg_bitrate, rebuf_ratio, _ = helpers.generateStats(sim.globalstate.avg_bitrate, sim.globalstate.bufftime, \
+	sim.globalstate.playtime, 1.0, sim.globalstate.tracePlaytime)
 
-simulation.printFinalStats(avg_bitrate, rebuf_ratio, simulation.bitratestate.num_switches)
+sim.printFinalStats(avg_bitrate, rebuf_ratio, sim.bitratestate.num_switches)

@@ -1,7 +1,7 @@
 # LIST OF HELPER FUNCTIONS
 import numpy as np
 import random, sys
-from config import *
+from default import *
 from chunkMap import *
 
 # function returns the most dominant bitrate played, if two are dominant it returns the bigger of two
