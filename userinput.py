@@ -52,11 +52,11 @@ class parseinput(object):
     self.mid_hb = self.getConfigVar(default.MID_HB, options.mid_hb)
     self.use_chunk_map = self.getConfigVar(default.CHUNK_AWARE_MODE, options.use_chunk_map)
     self.join_buffsize = self.getConfigVar(default.JOIN_BUFFSIZE, options.join_buffsize)
-    self.abr = self.getCaseBasedConfigVar({'utility' : default.UTILITY_ABR, 'buffer' : default.BUFFER_ABR, 'rate' : default.RATE_ABR}, options.abr)
+    self.abr = self.getCaseBasedConfigVar({'utility' : default.UTILITY_ABR, 'buffer' : default.BUFFER_ABR, 'rate' : default.RATE_ABR}, options.abr, parser)
     self.bsm = self.getConfigVar(default.BUFFER_MARGIN, options.bsm)
-    selb.bwsm = self.getConfigVar(default.BANDWIDTH_MARGIN, options.bwsm)
+    self.bwsm = self.getConfigVar(default.BANDWIDTH_MARGIN, options.bwsm)
     self.lower_res = self.getConfigVar(default.LOWER_RESERVOIR, options.lower_res)
-    selb.upper_res = self.getConfigVar(default.UPPER_RESERVOIR, options.upper_res)
+    self.upper_res = self.getConfigVar(default.UPPER_RESERVOIR, options.upper_res)
     self.MSEC_IN_SEC = default.MSEC_IN_SEC
     self.tracefile = args[0]
     self.candidates = default.CANDIDATES
@@ -69,12 +69,12 @@ class parseinput(object):
       return user_opt
     return default
 
-  def getCaseBasedConfigVar(self, default_dict, user_opt):
+  def getCaseBasedConfigVar(self, default_dict, user_opt, parser):
     if default_dict.values().count(True) > 1:
-      parse.error("can not select more than one two choices as default..." + str(default_dict))
+        parser.error("can not select more than one choices as default: " + str(default_dict))
 
     if user_opt is not None:
-      return user_opt
+        return user_opt
 
     return default_dict.keys()[default_dict.values().index(True)]
 
