@@ -111,7 +111,7 @@ class bufferstate(object):
       self.buffering = False
 
     if isComplete:
-      self.blen -= config.simstep / config.MSEC_IN_SEC
+      self.blen = max(self.blen - config.simstep / config.MSEC_IN_SEC, 0)
 
   def doConditional(self, config, bwArray, globalstate, chunkstate, bitratestate, bandwidthstate, bufferstate):
     self.blenAdded_thisStep = 0
@@ -136,7 +136,6 @@ class bufferstate(object):
       self.buffering = True
 
     # update the bufferlen at the end of this interval
-    # print chunkstate.chunks_downloaded, chunkstate.chd_thisStep
     if self.buffering:
       self.blen = 0
     elif not self.buffering and chunkstate.first_chunk and chunkstate.chunks_downloaded == 0:

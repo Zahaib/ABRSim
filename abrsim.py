@@ -4,7 +4,6 @@ import sys, os, math
 import numpy as np
 from userinput import parseinput
 from sim import newsimulation
-# from state import globalstate, chunkstate, bitratestate, bandwidthstate, bufferstate
 import algorithms, helpers
 
 # parse user input and defaults to get the config for this sim
@@ -37,7 +36,7 @@ while sim.globalstate.clock < sim.globalstate.traceSessiontime:
   sim.globalstate.doConditional(config, sim.bwArray, sim.globalstate, sim.chunkstate, sim.bitratestate, sim.bandwidthstate, sim.bufferstate, sim.sessionFullyDownloaded)
 
   # if all the chunks in the sessions have been downloaded, mark the session complete
-  if sim.chunkstate.chunks_downloaded >= math.ceil((sim.globalstate.tracePlaytime)/float(config.chunksize * 1000)): 
+  if sim.chunkstate.chunks_downloaded >= math.ceil((sim.globalstate.tracePlaytime)/float(config.chunksize * config.MSEC_IN_SEC)): 
     sim.sessionFullyDownloaded = True
 
 

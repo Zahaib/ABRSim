@@ -28,9 +28,11 @@ class parseinput(object):
     group.add_option("-m", "--use-chunk-map", action="store_true", dest="use_chunk_map", help="enable simulation to use a chunkmap provided as a dictionary named \"sizeDict\"")
     parser.add_option_group(group)
     group = OptionGroup(parser, "ABR algo config:")
-    group.add_option("-U", "--utility-abr", action="store_true", dest="utility", help="use utility based ABR to make bitrate decisions")
-    group.add_option("-B", "--buffer-abr", action="store_true", dest="buffer", help="use buffer based ABR to make bitrate decisions")
-    group.add_option("-R", "--xput-abr", action="store_true", dest="rate", help="use rate based ABR to make bitrate decisions")    
+    group.add_option("-A", "--abr", action="store", dest="abr", type="choice", choices=['utility', 'buffer', 'rate'], help="choose ABR from 'utility', 'buffer' or 'rate', without quotes")
+    group.add_option("-B", "--bsm", dest="bsm", type=float, metavar="FLOAT", help="bandwidth safety margin for utility ABR")
+    group.add_option("-W", "--bwsm", dest="bwsm", type=float, metavar="FLOAT", help="bandwidth safety margin for utility ABR")
+    group.add_option("-L", "--lower-res", dest="lower_res", type=int, metavar="INT", help="lower reservoir for buffer based ABR")
+    group.add_option("-U", "--upper-res", dest="upper_res", type=float, metavar="FLOAT", help="upper reservoir for buffer based ABR as percentage of max_buflen")
     parser.add_option_group(group)
     (options, args) = parser.parse_args()
 
@@ -50,8 +52,11 @@ class parseinput(object):
     self.mid_hb = self.getConfigVar(default.MID_HB, options.mid_hb)
     self.use_chunk_map = self.getConfigVar(default.CHUNK_AWARE_MODE, options.use_chunk_map)
     self.join_buffsize = self.getConfigVar(default.JOIN_BUFFSIZE, options.join_buffsize)
-    self.abr = self.getCaseBasedConfigVar({'utility' : default.UTILITY_ABR, 'buffer' : default.BUFFER_ABR, 'rate' : default.RATE_ABR}, \
-        {'utility' : options.utility, 'buffer' : options.buffer, 'rate' : options.rate})
+    self.abr = self.getCaseBasedConfigVar({'utility' : default.UTILITY_ABR, 'buffer' : default.BUFFER_ABR, 'rate' : default.RATE_ABR}, options.abr)
+    self.bsm = self.getConfigVar(default.BUFFER_MARGIN, options.bsm)
+    selb.bwsm = self.getConfigVar(default.BANDWIDTH_MARGIN, options.bwsm)
+    self.lower_res = self.getConfigVar(default.LOWER_RESERVOIR, options.lower_res)
+    selb.upper_res = self.getConfigVar(default.UPPER_RESERVOIR, options.upper_res)
     self.MSEC_IN_SEC = default.MSEC_IN_SEC
     self.tracefile = args[0]
     self.candidates = default.CANDIDATES
@@ -64,14 +69,14 @@ class parseinput(object):
       return user_opt
     return default
 
-  def getCaseBasedConfigVar(self, default_dict, user_opt_dict):
-    if default_dict.values().count(True) > 1 or user_opt_dict.values().count(True) > 1:
-        parse.error("can not select more than one ABR algorithm...")
+  def getCaseBasedConfigVar(self, default_dict, user_opt):
+    if default_dict.values().count(True) > 1:
+      parse.error("can not select more than one two choices as default..." + str(default_dict))
 
-    if user_opt_dict.values().count(True) == 0:
-        return default_dict.keys()[default_dict.values().index(True)]
+    if user_opt is not None:
+      return user_opt
 
-    return user_opt_dict.keys()[user_opt_dict.values().index(True)]
+    return default_dict.keys()[default_dict.values().index(True)]
 
 
 
