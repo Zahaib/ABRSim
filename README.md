@@ -1,7 +1,7 @@
 # ABRSim
 ## Introduction
 ABRSim is a Discrete Event Simulator ([DES](https://en.wikipedia.org/wiki/Discrete_event_simulation)) of an online video player. It takes as input a throughput trace, a configuration of player such as maximum buffer length and the ABR algorithm. It currently allows to choose from three ABR algorithm: a pure throughput based ABR, a buffer based ABR and a hybrid ABR that uses both buffer and througput information to make bitrate decision.
-
+`
 ## Usage 
   %core.py <inputfile> [OPTIONS]
 
@@ -38,5 +38,5 @@ ABR algo config:
   -W FLOAT, --bwsm=FLOAT            bandwidth safety margin for utility ABR
   -L INT, --lower-res=INT           lower reservoir for buffer based ABR
   -U FLOAT, --upper-res=FLOAT       upper reservoir for buffer based ABR as percentage of max_buflen
-
+`
 For bugs and suggestions, email: zakhtar@usc.edu
