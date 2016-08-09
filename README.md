@@ -4,7 +4,7 @@ ABRSim is a Discrete Event Simulator ([DES](https://en.wikipedia.org/wiki/Discre
 
 ```
 ## Usage 
-  %core.py <inputfile> [OPTIONS]
+  abrsim.py <inputfile> [OPTIONS]
 
 Options
 =======
