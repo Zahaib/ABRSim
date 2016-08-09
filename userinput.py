@@ -16,7 +16,7 @@ class parseinput(object):
 
   def __init__(self):
 
-    parser = OptionParser(usage="%core.py <inputfile> [OPTIONS]", version="%prog 1.0", epilog="For bugs and suggestions, email: zakhtar@usc.edu", formatter=MyTitledHelpFormatter())
+    parser = OptionParser(usage="%prog <inputfile> [OPTIONS]", version="%prog 1.0", epilog="For bugs and suggestions, email: zakhtar@usc.edu", formatter=MyTitledHelpFormatter())
     parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debugging output, prints state once every decision")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose debugging output, prints state once every simulation step")
     group = OptionGroup(parser, "Player config:")
