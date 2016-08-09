@@ -2,13 +2,21 @@
 
 import default
 import sys, getopt
-from optparse import OptionParser, OptionGroup,  TitledHelpFormatter
+from optparse import OptionParser, OptionGroup, HelpFormatter
+
+try:
+    from gettext import gettext
+except ImportError:
+    def gettext(message):
+        return message
+_ = gettext
+
 
 class parseinput(object):
 
   def __init__(self):
 
-    parser = OptionParser(usage="%core.py <inputfile> [OPTIONS]", version="%prog 1.0", epilog="For bugs and suggestions, email: zakhtar@usc.edu", formatter=TitledHelpFormatter())
+    parser = OptionParser(usage="%core.py <inputfile> [OPTIONS]", version="%prog 1.0", epilog="For bugs and suggestions, email: zakhtar@usc.edu", formatter=MyTitledHelpFormatter())
     parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debugging output, prints state once every decision")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose debugging output, prints state once every simulation step")
     group = OptionGroup(parser, "Player config:")
@@ -63,7 +71,7 @@ class parseinput(object):
         self.candidates = default.CANDIDATES
         self.jointime = default.JOINTIME
     except AttributeError, e:
-        parser.error("default value missing: " + str(e))
+        parser.error("missing default value for: " + str(e))
 
 
   def getConfigVar(self, default, user_opt):
@@ -81,5 +89,22 @@ class parseinput(object):
     return default_dict.keys()[default_dict.values().index(True)]
 
 
+class MyTitledHelpFormatter (HelpFormatter):
+    """Format help with underlined section headers.
+    """
+
+    def __init__(self,
+                 indent_increment=1,
+                 max_help_position=48,
+                 width=200,
+                 short_first=1):
+        HelpFormatter.__init__ (
+            self, indent_increment, max_help_position, width, short_first)
+
+    def format_usage(self, usage):
+        return "%s  %s\n" % (self.format_heading(_("Usage")), usage)
+
+    def format_heading(self, heading):
+        return "%s\n%s\n" % (heading, "=-"[self.level] * len(heading))
 
 
