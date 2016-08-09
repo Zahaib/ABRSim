@@ -164,7 +164,6 @@ class bitratestate(object):
       self.decision_cycle = config.mid_hb
 
     self.timeSinceLastDecision += config.simstep
-    # if self.timeSinceLastDecision != self.decision_cycle:
     self.timeSinceLastDecision = self.timeSinceLastDecision % self.decision_cycle
 
 
@@ -173,31 +172,31 @@ class bitratestate(object):
     if not chunkstate.first_chunk and self.timeSinceLastDecision == 0: #self.decision_cycle:
       if config.abr == 'utility':
         buffering_weight = -1000.0
-        BSM = 0.25
+        BSM = config.bsm
         newBR = algorithms.getUtilityBitrateDecision(bufferstate.blen, config.candidates, bandwidthstate.bandwidth, chunkstate.chunks_downloaded, \
         config.chunksize, BSM, buffering_weight, chunkstate.sessionHistory)
     elif config.abr == 'buffer':
-      conf = {'maxbuflen':120, 'r': 5, 'maxRPct':0.90, 'xLookahead':50}
+      conf = {'maxbuflen':120, 'r': config.lower_res, 'maxRPct':config.upper_res, 'xLookahead':50}
       newBR = algorithms.getBitrateBBA0(bufferstate.blen, config.candidates, conf)
     elif config.abr == 'rate':
-      newBR = algorithms.getBitrateDecisionBandwidth(BLEN, candidateBR, BW)
+      newBR = algorithms.getBitrateDecisionBandwidth(bufferstate.blen, config.candidates, bandwidthstate.bandwidth)
     else:
       newBR = self.bitrate
 
     #TODO: instead of newBR and self.bitrate use only self.old_bitrate and self.bitrate 
 
     # make the switch if switching up and no switch lock is active or switching down
-    if not chunkstate.first_chunk and (newBR > self.bitrate and self.switch_lock <= 0 and chunkstate.chunks_downloaded >= 2 and \
-      chunkstate.time_to_finish_chunk < bufferstate.blen * 1000.0) or (newBR < self.bitrate and chunkstate.time_to_finish_chunk > bufferstate.blen * 0.05 * 1000.0):
-      # activate switch lock if we have switched down      
+    # if not chunkstate.first_chunk and (newBR > self.bitrate and self.switch_lock <= 0 and chunkstate.chunks_downloaded >= 2 and \
+    #   chunkstate.time_to_finish_chunk < bufferstate.blen * 1000.0) or (newBR < self.bitrate and chunkstate.time_to_finish_chunk > bufferstate.blen * 0.05 * 1000.0):
+    if (newBR > self.bitrate and self.switch_lock <= 0) or newBR < self.bitrate:
+      # activate switch lock if we are switching down      
       if newBR < self.bitrate and self.switch_lock <= 0:
         self.switch_lock = config.switch_lock
       
+      # update the bitrate, old_bitrate and increase count of number of switches
+      self.old_bitrate = self.bitrate
       self.bitrate = newBR
-    # count number of switches
-    if self.old_bitrate != self.bitrate:
-      self.num_switches += 1 
-      self.old_bitrate = self.bitrate   
+      self.num_switches += 1
 
 
 

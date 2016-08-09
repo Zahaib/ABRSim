@@ -39,29 +39,31 @@ class parseinput(object):
     if len(args) != 1:
       parser.error("input tracefile not provided, to get help please run: python abrsim.py -h")
 
-    self.debug = self.getConfigVar(default.DEBUG, options.debug)
-    self.verbose = self.getConfigVar(default.VERBOSE_DEBUG, options.verbose)
-    self.max_buflen = self.getConfigVar(default.MAX_BUFLEN, options.max_buflen)
-    self.switch_lock = self.getConfigVar(default.SWITCH_LOCK, options.switch_lock)
-    self.chunksize = self.getConfigVar(default.CHUNKSIZE, options.chunksize)
-    self.bitrate = self.getConfigVar(default.INIT_BR, options.init_bitrate)
-    self.old_bitrate = self.bitrate
-    self.simstep = self.getConfigVar(default.SIMULATION_STEP, options.simstep)
-    self.init_stream = self.getConfigVar(default.INIT_STREAM, options.init_stream_chunks)
-    self.init_hb = self.getConfigVar(default.INIT_HB, options.init_hb)
-    self.mid_hb = self.getConfigVar(default.MID_HB, options.mid_hb)
-    self.use_chunk_map = self.getConfigVar(default.CHUNK_AWARE_MODE, options.use_chunk_map)
-    self.join_buffsize = self.getConfigVar(default.JOIN_BUFFSIZE, options.join_buffsize)
-    self.abr = self.getCaseBasedConfigVar({'utility' : default.UTILITY_ABR, 'buffer' : default.BUFFER_ABR, 'rate' : default.RATE_ABR}, options.abr, parser)
-    self.bsm = self.getConfigVar(default.BUFFER_MARGIN, options.bsm)
-    self.bwsm = self.getConfigVar(default.BANDWIDTH_MARGIN, options.bwsm)
-    self.lower_res = self.getConfigVar(default.LOWER_RESERVOIR, options.lower_res)
-    self.upper_res = self.getConfigVar(default.UPPER_RESERVOIR, options.upper_res)
-    self.MSEC_IN_SEC = default.MSEC_IN_SEC
-    self.tracefile = args[0]
-    self.candidates = default.CANDIDATES
-    self.jointime = default.JOINTIME
-    # self.utility_abr = default.UTILITY_ABR
+    try:
+        self.debug = self.getConfigVar(default.DEBUG, options.debug)
+        self.verbose = self.getConfigVar(default.VERBOSE_DEBUG, options.verbose)
+        self.max_buflen = self.getConfigVar(default.MAX_BUFLEN, options.max_buflen)
+        self.switch_lock = self.getConfigVar(default.SWITCH_LOCK, options.switch_lock)
+        self.chunksize = self.getConfigVar(default.CHUNKSIZE, options.chunksize)
+        self.bitrate = self.getConfigVar(default.INIT_BR, options.init_bitrate)
+        self.old_bitrate = self.bitrate
+        self.simstep = self.getConfigVar(default.SIMULATION_STEP, options.simstep)
+        self.init_stream = self.getConfigVar(default.INIT_STREAM, options.init_stream_chunks)
+        self.init_hb = self.getConfigVar(default.INIT_HB, options.init_hb)
+        self.mid_hb = self.getConfigVar(default.MID_HB, options.mid_hb)
+        self.use_chunk_map = self.getConfigVar(default.CHUNK_AWARE_MODE, options.use_chunk_map)
+        self.join_buffsize = self.getConfigVar(default.JOIN_BUFFSIZE, options.join_buffsize)
+        self.abr = self.getChoiceConfigVar({'utility' : default.UTILITY_ABR, 'buffer' : default.BUFFER_ABR, 'rate' : default.RATE_ABR}, options.abr, parser)
+        self.bsm = self.getConfigVar(default.BUFFER_MARGIN, options.bsm)
+        self.bwsm = self.getConfigVar(default.BANDWIDTH_MARGIN, options.bwsm)
+        self.lower_res = self.getConfigVar(default.LOWER_RESERVOIR, options.lower_res)
+        self.upper_res = self.getConfigVar(default.UPPER_RESERVOIR, options.upper_res)
+        self.MSEC_IN_SEC = default.MSEC_IN_SEC
+        self.tracefile = args[0]
+        self.candidates = default.CANDIDATES
+        self.jointime = default.JOINTIME
+    except AttributeError, e:
+        parser.error("default value missing: " + str(e))
 
 
   def getConfigVar(self, default, user_opt):
@@ -69,7 +71,7 @@ class parseinput(object):
       return user_opt
     return default
 
-  def getCaseBasedConfigVar(self, default_dict, user_opt, parser):
+  def getChoiceConfigVar(self, default_dict, user_opt, parser):
     if default_dict.values().count(True) > 1:
         parser.error("can not select more than one choices as default: " + str(default_dict))
 
