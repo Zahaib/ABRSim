@@ -24,8 +24,14 @@ class globalstate(object):
     self.bufftime += bufferstate.playStalled_thisStep
     self.playtime += config.simstep/config.MSEC_IN_SEC - bufferstate.playStalled_thisStep
 
+    bitrate_toUse = 0
+    if bitratestate.didSwitch:
+      bitrate_toUse = bitratestate.old_bitrate
+    else:
+      bitrate_toUse = bitratestate.bitrate
+
     if chunkstate.chunks_downloaded <= math.ceil((self.tracePlaytime)/float(config.chunksize * 1000)) and not isComplete: # check the equal to sign in less than equal to
-      self.avg_bitrate += int(chunkstate.chd_thisStep) * bitratestate.bitrate * config.chunksize
+      self.avg_bitrate += int(chunkstate.chd_thisStep) * bitrate_toUse * config.chunksize
 
   def updatePlaytime(self, val):
     self.playtime += val
@@ -122,13 +128,13 @@ class bufferstate(object):
       if self.playStalled_thisStep < (config.simstep / config.MSEC_IN_SEC):
         self.buffering = False
 
-    if self.playStalled_thisStep == config.simstep/config.MSEC_IN_SEC and chunkstate.chd_thisStep >= 1.0:
-      buffering = False
+    # if self.playStalled_thisStep == config.simstep/config.MSEC_IN_SEC and chunkstate.chd_thisStep >= 1.0:
+    #   buffering = False
 
     self.blenAdded_thisStep =  int(chunkstate.chd_thisStep) * config.chunksize
 
-    # if chunkstate.chd_thisStep >= 1.0:
-    #   self.buffering = False 
+    if chunkstate.chd_thisStep >= 1.0:
+      self.buffering = False 
 
     # this condition checks if we got in buffering during this interval
     if not self.buffering and self.blen >= 0 and self.blen + self.blenAdded_thisStep < config.simstep/config.MSEC_IN_SEC:
@@ -153,8 +159,10 @@ class bitratestate(object):
     self.bitrate = config.bitrate
     self.old_bitrate = config.old_bitrate
     self.num_switches = 0
+    self.didSwitch = False
 
   def doNonConditional(self, config, chunkstate):
+    self.didSwitch = False
     if self.switch_lock > 0:
       self.switch_lock -= config.simstep / config.MSEC_IN_SEC
 
@@ -189,6 +197,7 @@ class bitratestate(object):
     # if not chunkstate.first_chunk and (newBR > self.bitrate and self.switch_lock <= 0 and chunkstate.chunks_downloaded >= 2 and \
     #   chunkstate.time_to_finish_chunk < bufferstate.blen * 1000.0) or (newBR < self.bitrate and chunkstate.time_to_finish_chunk > bufferstate.blen * 0.05 * 1000.0):
     if (newBR > self.bitrate and self.switch_lock <= 0) or newBR < self.bitrate:
+      self.didSwitch = True
       # activate switch lock if we are switching down      
       if newBR < self.bitrate and self.switch_lock <= 0:
         self.switch_lock = config.switch_lock
