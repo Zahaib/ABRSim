@@ -23,9 +23,9 @@ while sim.globalstate.clock < sim.globalstate.traceSessiontime:
 
   # bring all data structures up to date to the current step
   sim.globalstate.doNonConditional(config)
-  sim.chunkstate.doNonConditional(config)
-  sim.bufferstate.doNonConditional(config, sim.sessionFullyDownloaded)
-  sim.bitratestate.doNonConditional(config, sim.chunkstate)
+  sim.chunkstate.doNonConditional(config, sim.globalstate)
+  sim.bufferstate.doNonConditional(config, sim.globalstate, sim.sessionFullyDownloaded)
+  sim.bitratestate.doNonConditional(config, sim.globalstate, sim.chunkstate)
 
   # handle the conditional events for relevant state data structures
   if not sim.sessionFullyDownloaded:
