@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-from helpers import *
-from chunkMap import *
-from default import *
+import helpers
+from chunkMap import sizeDict
+from default import CHUNK_AWARE_MODE
 import math
-# utility function:
+
 # pick the highest bitrate that will not introduce buffering
-def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN, buffering_weight, sessionHistory):
+def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, CHUNKSIZE, BUFFER_SAFETY_MARGIN, buffering_weight, sessionHistory, chunk_residue, currbitratePlaying):
   if BUFFER_SAFETY_MARGIN == -1:
     BUFFER_SAFETY_MARGIN = 0.275
   BUFFERING_WEIGHT = buffering_weight
@@ -27,11 +27,27 @@ def getUtilityBitrateDecision(bufferlen, candidateBitrates, bandwidth, chunkid, 
 # current value of the buffer.
     actualbitrate = br
     if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid, CHUNKSIZE) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
-    bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE
-    estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
+
+    # this code adds the capability to make intelligent switching decisions, given the amount of chunk already downloade and the current bufferlen.
+    if br == currbitratePlaying:
+      bufferlengthMs = bufferlen - actualbitrate * (CHUNKSIZE * (1 - chunk_residue))/float(bandwidth) + CHUNKSIZE
+      estBufferingTime = 1000 * max(actualbitrate * (CHUNKSIZE * (1 - chunk_residue))/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
+    else:
+      bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE
+      estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
     if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT: # and br * BANDWIDTH_SAFETY_MARGIN < bandwidth:
       ret = br
       utility = estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT
+
+
+    ##### OLD CODE #####
+    # if CHUNK_AWARE_MODE and br in sizeDict and chunkid in sizeDict[br]: actualbitrate = getRealBitrate(br, chunkid, CHUNKSIZE) #sizeDict[br][chunkid]*8/float(CHUNKSIZE * 1000)
+    # bufferlengthMs = bufferlen - actualbitrate * CHUNKSIZE/float(bandwidth) + CHUNKSIZE
+    # estBufferingTime = 1000 * max(actualbitrate * CHUNKSIZE/float(bandwidth) - bufferlengthMs * BUFFER_SAFETY_MARGIN, 0) # all computation are in milli seconds
+    # if utility < estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT: # and br * BANDWIDTH_SAFETY_MARGIN < bandwidth:
+    #   ret = br
+    #   utility = estBufferingTime * BUFFERING_WEIGHT + br * BITRATE_WEIGHT
+
   # extremely bad bandwidth case
   if ret == -1:
     ret = candidateBitrates[0]

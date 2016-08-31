@@ -182,7 +182,7 @@ class bitratestate(object):
         buffering_weight = -1000.0
         BSM = config.bsm
         newBR = algorithms.getUtilityBitrateDecision(bufferstate.blen, config.candidates, bandwidthstate.bandwidth, chunkstate.chunks_downloaded, \
-        config.chunksize, BSM, buffering_weight, chunkstate.sessionHistory)
+        config.chunksize, BSM, buffering_weight, chunkstate.sessionHistory, chunkstate.chunk_residue, bitratestate.bitrate)
     elif config.abr == 'buffer':
       conf = {'maxbuflen':120, 'r': config.lower_res, 'maxRPct':config.upper_res, 'xLookahead':50}
       newBR = algorithms.getBitrateBBA0(bufferstate.blen, config.candidates, conf)

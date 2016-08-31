@@ -26,35 +26,6 @@ def getInitBWCalculated(init_br, jointime, chunksize):
 def getInitBW(bwArray):
   return bwArray[0][1]
 
-# # function initializes the state variables
-# def initSysState():
-#   BLEN = 0
-#   CHUNKS_DOWNLOADED = 0
-#   BUFFTIME = 0
-#   PLAYTIME = 0
-#   CANONICAL_TIME = 0
-#   INIT_HB = 2000
-#   MID_HB = 5000
-#   BR = 0
-#   BW = 0
-#   AVG_SESSION_BITRATE = 0
-#   SWITCH_LOCK = 0
-#   return BLEN, CHUNKS_DOWNLOADED, BUFFTIME, PLAYTIME, CANONICAL_TIME, INIT_HB, MID_HB, BR, BW, AVG_SESSION_BITRATE, SWITCH_LOCK, SIMULATION_STEP
-
-# # function bootstraps the simulation, some of the functionality is same as the initSysState, check duplication
-# def bootstrapSim(jointime, BW, BR, CHUNKSIZE):
-#   sessionHistory = dict()
-#   BLEN = 1.25
-#   CHUNKS_DOWNLOADED = int(BLEN / CHUNKSIZE)
-#   CLOCK = jointime
-#   chunk_residue = BLEN / CHUNKSIZE % 1
-#   sessionHistory[0] = [jointime]
-#   #print chunk_residue, CHUNKS_DOWNLOADED 
-#   if BLEN < CHUNKSIZE:
-#     first_chunk = True
-#   elif BLEN >= CHUNKSIZE:
-#     first_chunk = False
-#   return BLEN, CHUNKS_DOWNLOADED, CLOCK, chunk_residue, first_chunk, sessionHistory  
 
 # just a bunch of sanity checks to ensure input is right
 def isSane(bwArray, BR, stdbw, avgbw, sizeDict):
@@ -253,50 +224,6 @@ def getBWStdDev(bwArray):
   bwMat = np.array(bwArray)
   return np.around(np.average(bwMat[:,1]),2), np.around(np.std(bwMat[:,1]),2)
         
-# # function intializes session state
-# def parseSessionState(group):
-#   ret = []
-#   ts = []
-#   bw = []
-#   for i in group.irow(0)["candidatebitrates"].split(","):
-#     ret.append(int(i))
-#   for j in range(0, group.shape[0]):
-#     ts.append(group.irow(j)["timestampms"])
-#     bw.append(group.irow(j)["bandwidth"])
-#   return ret, int(group.irow(0)["jointimems"]), int(group.irow(0)["playtimems"]), int(group.irow(0)["sessiontimems"]), int(group.irow(0)["lifeaveragebitratekbps"]), int(group.irow(0)["bufftimems"]), int(group.irow(0)["init_br"]), zip(ts,bw), int(group.irow(0)["chunkDuration"]), len(sizeDict[ret[0]]) #10 , 75 # 
-
-# # function intializes session state
-# def parseSessionStateFromTrace(filename):
-#   ts, bw = [], []
-#   init_br = 0
-#   bitrates = [1002, 1434, 2738, 3585, 4661, 5885] # candidate bitrates are in kbps, you can change these to suite your values
-
-#   try:  
-#     ls = open(filename).readlines()
-#     for l in ls:
-#       if l in ['\n', '\r\n']:
-# 	continue
-#       ts.append(float(l.split(" ")[0]))
-#       bw.append(float(l.split(" ")[1]))
-#   except IOError:
-#     print "Incorrect filepath: " + str(filename) + " no such file found..."
-#     sys.exit()
-
-#   try:
-#     init_br = int(float(ls[-1].rstrip("\n").split(" ")[9]))
-#   except (IndexError, ValueError):
-#     init_br = bitrates[0]
-
-
-#   # now write the code to read the trace file, following is a sample ts and bw array
-#   #ts = [0, 1000, 2000, 3000, 4000, 5000, 6000]
-#   #bw = [179981.99099548874, 203036.0, 209348.0, 198828.0000000001, 209348.0, 203036.0, 209348.0]    
-#   totalTraceTime = ts[-1] # read this value as the last time stamp in the file
-#   chunkDuration = 5
-#   jointimems = ts[0] + 1
-
-#   return bitrates, jointimems, totalTraceTime, totalTraceTime + jointimems, 1, 1, init_br, zip(ts,bw), chunkDuration, sys.maxint #10 , 75 # 
-
 
 # new function to parse tracefile
 def parseTrace(tracefile):
@@ -420,4 +347,13 @@ def validationBWMap(bwArray):
     bw.append(round(avg/int(count),2))
   
   return zip(ts,bw)
+
+def getTrueBW(clock, currBW, stepsize, decision_cycle, bwArray, usedBWArray, sessiontimeFromTrace):
+  ret = currBW
+  num = 1.0
+  for c in range(clock + stepsize, min(clock + decision_cycle + stepsize, sessiontimeFromTrace), stepsize):
+    ret += interpolateBWInterval(c, usedBWArray, bwArray)
+    num += 1.0
+
+  return ret / num 
 
